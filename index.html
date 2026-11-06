@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en-AU">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>CallReady: sign in</title>
+<link rel="icon" href="reestv-logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="callready.css">
+</head>
+<body>
+<main>
+  <header class="top">
+    <a class="wordmark" href="./">Call<span class="ready">Ready</span></a>
+    <span class="by"><span>by</span><img src="reestv-logo.png" alt="REESTV" width="58" height="36"></span>
+  </header>
+
+  <section class="signin card">
+    <h1>Sign in to practise</h1>
+
+    <form id="emailForm" novalidate>
+      <p class="lead">Enter your work email and we’ll send you a sign-in code.</p>
+      <label for="email">Work email</label>
+      <input id="email" type="email" autocomplete="email" inputmode="email" required placeholder="you@seqirus.com">
+      <button class="primary" type="submit" id="sendBtn">Send my code</button>
+      <p class="msg" id="emailMsg" role="status" aria-live="polite"></p>
+    </form>
+
+    <form id="codeForm" novalidate hidden>
+      <p class="lead">We sent a code to <b id="sentTo"></b>. It expires in 1 hour.</p>
+      <label for="code">Sign-in code</label>
+      <input id="code" class="code" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="10" required>
+      <button class="primary" type="submit" id="verifyBtn">Sign in</button>
+      <button class="alt" type="button" id="backBtn">Use a different email</button>
+      <p class="msg" id="codeMsg" role="status" aria-live="polite"></p>
+    </form>
+  </section>
+
+  <footer class="foot">
+    <p>For internal sales training only. Only invited reps can sign in. Doctors are fictional. Calls are processed by ElevenLabs for training only.</p>
+    <p>CallReady is built by REESTV · <a href="https://www.callready.com.au">www.callready.com.au</a></p>
+  </footer>
+</main>
+
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js"></script>
+<script>
+  const cfg = window.CALLREADY;
+  const sb = supabase.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey);
+  const $ = (id) => document.getElementById(id);
+  let email = "";
+
+  // Already signed in: go straight to practice.
+  sb.auth.getSession().then(({ data }) => { if (data.session) location.replace("practice.html"); });
+
+  function say(el, text, isError) {
+    el.textContent = text || "";
+    el.classList.toggle("error", !!isError);
+  }
+
+  $("emailForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    email = $("email").value.trim().toLowerCase();
+    if (!$("email").checkValidity() || !email) { say($("emailMsg"), "Enter a valid email address.", true); return; }
+    $("sendBtn").disabled = true; say($("emailMsg"), "Sending…");
+    const { error } = await sb.auth.signInWithOtp({ email, options: { shouldCreateUser: true } });
+    $("sendBtn").disabled = false;
+    if (error) {
+      // The invite check in the database blocks unknown emails, which Supabase reports as a database error.
+      const notInvited = /database error|not invited|signups not allowed/i.test(error.message);
+      say($("emailMsg"), notInvited
+        ? "This email hasn’t been invited to CallReady. Check the spelling, or ask your trainer to add you."
+        : (/rate limit|seconds/i.test(error.message)
+            ? "A code was sent very recently. Wait a minute, then try again."
+            : "The code couldn’t be sent: " + error.message), true);
+      return;
+    }
+    say($("emailMsg"), "");
+    $("sentTo").textContent = email;
+    $("emailForm").hidden = true; $("codeForm").hidden = false;
+    $("code").value = ""; $("code").focus();
+  });
+
+  $("codeForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const token = $("code").value.replace(/\D/g, "");
+    if (token.length < 6) { say($("codeMsg"), "Enter the code from your email.", true); return; }
+    $("verifyBtn").disabled = true; say($("codeMsg"), "Checking…");
+    const { error } = await sb.auth.verifyOtp({ email, token, type: "email" });
+    $("verifyBtn").disabled = false;
+    if (error) { say($("codeMsg"), "That code didn’t work. Check it, or go back and send a new one.", true); return; }
+    location.replace("practice.html");
+  });
+
+  $("backBtn").addEventListener("click", () => {
+    $("codeForm").hidden = true; $("emailForm").hidden = false;
+    say($("codeMsg"), ""); $("email").focus();
+  });
+</script>
+</body>
+</html>

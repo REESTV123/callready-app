@@ -1,0 +1,177 @@
+/* CallReady app styles: shared by the product picker, practice call pages and results. Matches www.callready.com.au. */
+:root {
+  --bg: #03090B;
+  --bg-2: #061518;
+  --panel: #0A1F23;
+  --panel-2: #0E2A2F;
+  --text: #F2FAFA;
+  --muted: #B4C8CA;
+  --faint: #7F9799;
+  --teal: #19E3D2;
+  --teal-2: #0FB8C9;
+  --edge: rgba(25, 227, 210, 0.55);
+  --line: rgba(25, 227, 210, 0.18);
+  --glow: 0 0 24px rgba(25, 227, 210, 0.25);
+  --miss: #FF9466;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  min-height: 100vh;
+  background:
+    radial-gradient(60% 40% at 90% 0%, rgba(15, 184, 201, 0.16), transparent 70%),
+    radial-gradient(50% 35% at 0% 100%, rgba(25, 227, 210, 0.07), transparent 70%),
+    var(--bg);
+  background-attachment: fixed;
+  color: var(--text);
+  font: 400 17px/1.55 "Figtree", system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  display: flex; justify-content: center; padding: 28px 20px 120px;
+}
+main { width: 100%; max-width: 560px; }
+main.wide { max-width: 760px; }
+a { color: var(--teal); }
+:focus-visible { outline: 3px solid var(--teal); outline-offset: 3px; }
+
+/* Header: CallReady wordmark left, REESTV logo right */
+.top { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 36px; }
+.wordmark { font-weight: 900; font-size: 30px; letter-spacing: -0.03em; line-height: 1; color: var(--text); text-decoration: none; }
+.wordmark .ready {
+  background: linear-gradient(180deg, #2CF5DF 0%, #12C9C9 100%);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.by { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 13px; }
+.by img { height: 36px; width: auto; display: block; }
+
+.eyebrow, h1.label, .ladder h2 {
+  margin: 0 0 12px; color: var(--teal); font-weight: 600; font-size: 13px;
+  letter-spacing: 0.16em; text-transform: uppercase;
+}
+
+/* Buttons and pills */
+.btn, button.primary {
+  display: inline-block; padding: 12px 22px; border-radius: 999px; border: 0; text-decoration: none; cursor: pointer;
+  font: 600 16px "Figtree", sans-serif; color: var(--bg);
+  background: linear-gradient(90deg, var(--teal), var(--teal-2));
+  box-shadow: var(--glow);
+}
+button, .pick a {
+  font: 500 15px "Figtree", sans-serif; cursor: pointer; text-decoration: none;
+  border: 1px solid var(--line); background: transparent; color: var(--text);
+  padding: 9px 16px; border-radius: 999px;
+}
+button:hover, .pick a:hover { border-color: var(--edge); }
+.pick { display: flex; flex-wrap: wrap; gap: 8px; }
+.pick a[aria-current="true"] {
+  color: var(--bg); font-weight: 600; border-color: transparent;
+  background: linear-gradient(90deg, var(--teal), var(--teal-2));
+}
+
+/* Cards */
+.card {
+  position: relative; background: var(--panel); border: 1.5px solid var(--edge); border-radius: 18px;
+  box-shadow: inset 0 0 40px rgba(25, 227, 210, 0.05), 0 0 30px rgba(25, 227, 210, 0.08);
+}
+.card::before {
+  content: ""; position: absolute; top: -1px; left: 20%; right: 20%; height: 2px;
+  background: linear-gradient(90deg, transparent, #7FFFF2, transparent); filter: blur(1px);
+}
+
+/* Product picker (home page) */
+.product-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 18px; }
+.product { display: flex; flex-direction: column; padding: 28px 26px 26px; color: var(--text); text-decoration: none; transition: box-shadow .2s; }
+.product:hover { box-shadow: inset 0 0 40px rgba(25, 227, 210, 0.08), 0 0 36px rgba(25, 227, 210, 0.22); }
+.product .name { font-weight: 800; font-size: clamp(36px, 8vw, 48px); letter-spacing: -0.02em; line-height: 1; margin: 0 0 8px; }
+.product .generic { color: var(--teal); font-size: 15px; font-weight: 500; margin: 0 0 18px; }
+.product .about { margin: 0 0 24px; color: var(--muted); font-size: 16px; flex: 1; }
+.product .btn { align-self: flex-start; }
+
+/* Product switcher (call pages) */
+nav.products { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; padding: 6px; margin: 0 0 32px; border: 1px solid var(--line); border-radius: 18px; background: var(--bg-2); }
+nav.products a { display: block; padding: 12px 16px; border-radius: 13px; color: var(--muted); text-decoration: none; }
+nav.products a b { display: block; font-weight: 800; font-size: 22px; letter-spacing: -0.01em; color: var(--text); line-height: 1.15; }
+nav.products a span { display: block; font-size: 13px; line-height: 1.35; margin-top: 2px; }
+nav.products a:not([aria-current]):hover { background: var(--panel); }
+nav.products a[aria-current="page"] { background: var(--panel-2); box-shadow: inset 0 0 0 1.5px var(--edge); }
+nav.products a[aria-current="page"] span { color: var(--teal); }
+
+/* Set-up choices */
+.setup { margin: 0 0 36px; display: grid; gap: 24px; }
+.ladder { margin: 0; }
+.email label { display: block; color: var(--muted); margin-bottom: 8px; }
+.email input {
+  width: 100%; font: 400 16px "Figtree", sans-serif; color: var(--text);
+  background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px;
+}
+.email input:focus-visible { outline: 3px solid var(--teal); outline-offset: 2px; }
+.email input:invalid:not(:placeholder-shown) { border-color: var(--miss); }
+.email small { display: block; color: var(--faint); font-size: 13px; margin-top: 6px; }
+
+/* Appointment slip */
+.slip { margin-bottom: 36px; padding: 28px 26px 24px; }
+.doctor { font-weight: 800; font-size: clamp(32px, 8vw, 42px); letter-spacing: -0.02em; line-height: 1.05; margin: 0 0 6px; }
+.where { color: var(--muted); margin: 0 0 22px; }
+.slip dl { margin: 0; display: grid; grid-template-columns: 9em 1fr; gap: 10px 16px; border-top: 1px solid var(--line); padding-top: 20px; }
+.slip dt { color: var(--teal); font-weight: 500; }
+.slip dd { margin: 0; }
+.start { margin: 22px 0 0; font-size: 15px; color: var(--muted); }
+.start b { color: var(--teal); font-weight: 600; }
+
+/* Reference panels */
+details { border-top: 1px solid var(--line); padding: 16px 0; }
+details:last-of-type { border-bottom: 1px solid var(--line); }
+summary { cursor: pointer; font-weight: 600; }
+summary::marker { color: var(--teal); }
+details p, details li { color: var(--muted); font-size: 15px; }
+details ul { padding-left: 20px; margin: 8px 0; }
+details li::marker { color: var(--teal); }
+details h3 { font: 600 15px "Figtree", sans-serif; color: var(--text); margin: 16px 0 4px; }
+details b { color: var(--text); }
+
+/* Results link */
+.review { display: block; margin-top: 32px; padding: 18px 22px; text-decoration: none; color: var(--text); }
+.review b { font-weight: 700; }
+.review b::after { content: " →"; color: var(--teal); }
+.review span { display: block; color: var(--muted); font-size: 14px; margin-top: 4px; }
+.review:hover b { color: var(--teal); }
+
+/* Footer */
+.foot { margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--line); color: var(--faint); font-size: 13px; }
+.foot p { margin: 0 0 8px; }
+.foot a { color: var(--muted); text-decoration: none; }
+.foot a:hover { color: var(--teal); }
+
+@media (max-width: 480px) {
+  .wordmark { font-size: 26px; }
+  .by span { display: none; }
+  .by img { height: 30px; }
+  .slip dl { grid-template-columns: 1fr; gap: 2px; }
+  .slip dd { margin-bottom: 10px; }
+}
+
+/* Sign-in (Stage 4) */
+.signin { padding: 30px 26px 26px; margin-bottom: 28px; }
+.signin h1 { font-weight: 800; font-size: clamp(30px, 7vw, 38px); letter-spacing: -0.02em; line-height: 1.1; margin: 0 0 10px; }
+.signin p.lead { color: var(--muted); margin: 0 0 24px; }
+.signin form { display: grid; gap: 14px; }
+.signin label { color: var(--muted); }
+.signin input {
+  width: 100%; font: 400 17px "Figtree", sans-serif; color: var(--text);
+  background: var(--bg-2); border: 1px solid var(--line); border-radius: 12px; padding: 13px 14px;
+}
+.signin input.code { font-size: 26px; font-weight: 600; letter-spacing: 0.3em; text-align: center; }
+.signin button.primary { justify-self: start; }
+.signin button.primary[disabled] { opacity: .55; cursor: wait; }
+.signin .alt { background: none; border: 0; padding: 0; color: var(--teal); font-size: 15px; justify-self: start; text-decoration: underline; }
+.msg { margin: 4px 0 0; font-size: 15px; color: var(--muted); }
+.msg.error { color: var(--miss); }
+[hidden] { display: none !important; }
+
+/* Signed-in bar on the practice page */
+.who { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin: -20px 0 28px; color: var(--muted); font-size: 14px; }
+.who b { color: var(--text); font-weight: 600; }
+.who button { padding: 6px 14px; font-size: 14px; }
+.callstate { margin: 22px 0 0; font-size: 15px; color: var(--muted); }
+.callstate.error { color: var(--miss); }
+nav.products a { cursor: pointer; }

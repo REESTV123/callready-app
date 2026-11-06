@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en-AU">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>CallReady: practice call</title>
+<link rel="icon" href="reestv-logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="callready.css">
+</head>
+<body>
+<main>
+  <header class="top">
+    <a class="wordmark" href="practice.html">Call<span class="ready">Ready</span></a>
+    <span class="by"><span>by</span><img src="reestv-logo.png" alt="REESTV" width="58" height="36"></span>
+  </header>
+  <div class="who"><span>Signed in as <b id="whoEmail">…</b></span><button type="button" id="signOut">Sign out</button></div>
+
+  <nav class="products" aria-label="Product" id="productNav">
+    <a data-p="vazkepa"><b>Vazkepa</b><span>icosapent ethyl</span></a>
+    <a data-p="neffy"><b>neffy</b><span>adrenaline nasal spray</span></a>
+  </nav>
+
+  <div class="setup">
+    <section class="ladder" aria-labelledby="doctorTitle">
+      <h2 id="doctorTitle">Choose a doctor</h2>
+      <div class="pick" id="pick"></div>
+    </section>
+    <section class="ladder" aria-labelledby="ladderTitle">
+      <h2 id="ladderTitle">Choose where the doctor is on the adoption ladder</h2>
+      <div class="pick" id="pickLevel"></div>
+    </section>
+  </div>
+
+  <h1 class="label">Your next appointment</h1>
+  <section class="slip card" aria-live="polite">
+    <p class="doctor" id="name">Loading…</p>
+    <p class="where" id="where"></p>
+    <dl>
+      <dt>Time with you</dt><dd id="time"></dd>
+      <dt>Adoption ladder</dt><dd id="level"></dd>
+      <dt>Your objective</dt><dd id="objective"></dd>
+      <dt>Product</dt><dd id="productLine"></dd>
+    </dl>
+    <p class="callstate" id="callState" role="status">Getting your call ready…</p>
+  </section>
+
+  <div id="reference"></div>
+
+  <a class="review card" href="results.html"><b>My results</b><span>See your practice calls and scores. A call appears a few minutes after it ends, and is also emailed to you.</span></a>
+
+  <footer class="foot">
+    <p id="footNote"></p>
+    <p>CallReady is built by REESTV · <a href="https://www.callready.com.au">www.callready.com.au</a></p>
+  </footer>
+</main>
+
+<template id="ref-vazkepa">
+  <details>
+    <summary>VAZKEPA product card</summary>
+    <p>Use only these facts in the call. Anything else is a Medical Information request (1800 642 865).</p>
+    <h3>Indication</h3>
+    <ul>
+      <li>Reduces the risk of CV events in adult statin-treated patients at high CV risk with triglycerides ≥1.7 mmol/L and established CV disease, or diabetes and ≥1 other CV risk factor.</li>
+    </ul>
+    <h3>Efficacy: REDUCE-IT</h3>
+    <ul>
+      <li>8,179 statin-treated patients with established CVD, or diabetes and ≥1 other risk factor; median follow-up 4.9 years.</li>
+      <li>5-point MACE: 17.2% vs 22.0% placebo. RRR 25%, ARR 4.8%, NNT 21; HR 0.75 (95% CI 0.68–0.83), p&lt;0.001.</li>
+      <li>CV death RRR 20% (HR 0.80, p=0.03); MI RRR 31% (HR 0.69, p&lt;0.001); stroke RRR 28% (HR 0.72, p=0.01).</li>
+      <li>Around 1 in 3 statin (± ezetimibe) patients after MI or unstable angina have another CV event within 7 years (IMPROVE-IT).</li>
+    </ul>
+    <h3>Dosing</h3>
+    <ul>
+      <li>Two capsules twice a day, with or after a meal. Swallow whole; do not break, crush, dissolve or chew.</li>
+    </ul>
+    <h3>Safety</h3>
+    <ul>
+      <li>Generally well tolerated over 4.9 years. More frequent than placebo: bleeding 11.8% vs 9.9%, peripheral oedema 6.5% vs 5.0%, constipation 5.4% vs 3.6%, atrial fibrillation 5.3% vs 3.9%.</li>
+      <li>Serious bleeding 2.7% vs 2.1% (p=0.06). Patients on antithrombotic agents may be at increased risk of bleeding; monitor periodically.</li>
+      <li>Increased risk of AF/flutter requiring hospitalisation, greater with prior AF; monitor and perform ECG when clinically indicated.</li>
+      <li>Contraindicated with hypersensitivity to icosapent ethyl, soya or excipients. Caution with fish or shellfish allergy. Monitor ALT/AST in hepatic impairment.</li>
+    </ul>
+    <h3>Compliance</h3>
+    <ul>
+      <li>Report any possible adverse event you hear about to CSL Seqirus, following company process.</li>
+      <li>No comparative claims against fish oil, fibrates, ezetimibe or PCSK9 inhibitors beyond the approved wording.</li>
+    </ul>
+  </details>
+  <details>
+    <summary>PBS eligibility checklist</summary>
+    <p>Authority Required (STREAMLINED). Initiation 15889, continuation 15927. All of:</p>
+    <ul>
+      <li><b>Established ASCVD:</b> coronary artery disease, cerebrovascular or carotid disease, or peripheral arterial disease.</li>
+      <li><b>Statin:</b> stable dose for at least 12 weeks (or statin contraindicated, or withdrawn for clinically important adverse events).</li>
+      <li><b>LDL-C 1.0–2.6 mmol/L</b> (or non-HDL-C 1.5–3.5 mmol/L if LDL cannot be measured).</li>
+      <li><b>Fasting TG 1.7–5.6 mmol/L.</b></li>
+      <li>In conjunction with <b>diet and exercise</b>.</li>
+    </ul>
+    <p>Diabetes with risk factors but no established ASCVD is within the TGA indication but not the PBS criteria.</p>
+  </details>
+</template>
+<template id="ref-neffy">
+  <details>
+    <summary>neffy product card</summary>
+    <p>Use only these facts in the call. Anything else is a Medical Information request (1800 642 865).</p>
+    <h3>Indication and dosing</h3>
+    <ul>
+      <li>Adrenaline nasal spray for emergency treatment of anaphylaxis in adults and children aged 4 years and older.</li>
+      <li>1 mg for patients 15 kg to &lt;30 kg; 2 mg for patients ≥30 kg. Pack of two single-dose sprays.</li>
+      <li>Prescribe with an anaphylaxis management plan, which includes an ASCIA Action Plan for Anaphylaxis.</li>
+    </ul>
+    <h3>Unmet need</h3>
+    <ul>
+      <li>Fewer than 50% of patients received adrenaline before hospital (Australian ED audit).</li>
+      <li>Barriers: not carrying the device, needle anxiety, hesitation and lack of confidence in the moment.</li>
+    </ul>
+    <h3>Efficacy</h3>
+    <ul>
+      <li>Recognised as being as effective as adrenaline auto-injectors (e.g. EpiPen) by the TGA, PBAC and ASCIA. All adrenaline devices approved in Australia work rapidly to treat anaphylaxis.</li>
+      <li>Rapid changes in HR and BP from 1 minute, comparable to 0.3 mg IM adrenaline and auto-injector. PD study in healthy volunteers; HR and BP are surrogate markers and their clinical meaning in anaphylaxis is unclear.</li>
+      <li>Effective absorption regardless of nasal congestion or allergic rhinitis.</li>
+      <li>Oral food challenge study: 100% of patients achieved symptom resolution after one dose; improvement started within 5 minutes.</li>
+    </ul>
+    <h3>Use</h3>
+    <ul>
+      <li>HOLD (do not test-spray), PLACE in the nostril without angling, PRESS the plunger firmly until it clicks.</li>
+      <li>Call an ambulance. If no improvement after 5 minutes, give a second dose with a new spray, ideally in the same nostril.</li>
+      <li>100% of trained adults administered it without error (n=42).</li>
+    </ul>
+    <h3>Safety and storage</h3>
+    <ul>
+      <li>Well tolerated; no serious adverse events in clinical trials. Most common: nasal discomfort and headache. No needle-related injuries.</li>
+      <li>Shelf life from manufacture: 1 mg 2 years, 2 mg 2.5 years. Store below 25°C; short excursions up to 50°C permitted.</li>
+      <li>Do not freeze. A frozen device will not work; thaw for at least one hour.</li>
+    </ul>
+    <h3>Compliance</h3>
+    <ul>
+      <li>Report any possible adverse event you hear about to CSL Seqirus, following company process.</li>
+      <li>No claims that neffy is faster, stronger or better than EpiPen or IM adrenaline. The approved word is comparable.</li>
+    </ul>
+  </details>
+  <details>
+    <summary>PBS eligibility</summary>
+    <p>PBS listed, Authority Required, for anticipated emergency treatment of anaphylaxis.</p>
+    <ul>
+      <li><b>Continuing supply:</b> GPs can prescribe to eligible patients previously prescribed an authority prescription for adrenaline.</li>
+      <li><b>Initial supply:</b> patients assessed to be at significant risk of anaphylaxis by, or in consultation with, a specified specialist, or discharged from hospital or ED after treatment with adrenaline for anaphylaxis.</li>
+    </ul>
+    <p>Check the full criteria at www.pbs.gov.au.</p>
+  </details>
+</template>
+
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js"></script>
+<script>
+  const PRODUCTS = {
+    vazkepa: (() => {
+      const DOCTORS = {
+        doyle: {
+          agent: "agent_0301m50sjxxkeqh9275c20f6dz7e",
+          name: "Dr Karen Doyle",
+          where: "GP, bulk-billing practice in Sunbury",
+          time: "About 5 minutes"
+        },
+        nguyen: {
+          agent: "agent_8301m50sjt7dfvc9xvfpj9q0y42c",
+          name: "Dr Tom Nguyen",
+          where: "GP, family practice in Footscray",
+          time: "About 5 minutes"
+        },
+        collins: {
+          agent: "agent_1101m50sjpnde00s5hc92t430c1s",
+          name: "Dr Andrew Collins",
+          where: "GP running a chronic disease clinic, Geelong",
+          time: "About 8 minutes"
+        }
+      };
+      // Seqirus adoption ladder: where this doctor is with Vazkepa. The level name is passed to the agent as a dynamic variable.
+      const LEVELS = {
+        1: { name: "Non User", note: "Knows of Vazkepa but has never prescribed it", objective: "Uncover what is holding them back and link Vazkepa to their patients. Aim for agreement to check one specific patient against the PBS criteria and initiate." },
+        2: { name: "Trial User", note: "Has started Vazkepa in one or two patients", objective: "Follow up their experience and check patient selection against the PBS criteria. Aim for initiation in more eligible patients." },
+        3: { name: "User", note: "Prescribes Vazkepa for some patients, but not routinely", objective: "Find what stops it becoming routine. Aim for a consistent way to identify eligible post-MI patients." },
+        4: { name: "Loyal User", note: "Routinely starts Vazkepa in eligible post-MI patients", objective: "Reinforce appropriate use and explore another eligible ASCVD group, such as prior ischaemic stroke or peripheral arterial disease." },
+        5: { name: "Advocate", note: "Loyal user who talks positively about Vazkepa to colleagues", objective: "Maintain the relationship and keep to approved claims. Never ask them to promote Vazkepa to colleagues; if appropriate, offer a properly arranged educational meeting through CSL Seqirus." }
+      };
+      // What each doctor says first, by adoption level, so the call opens in the right place.
+      const OPENINGS = {
+        doyle: {
+          1: "Come in, grab a seat. Five minutes, sorry. Is this the omega-3 one the cardiologists keep mentioning?",
+          2: "Come in. Only five minutes. Good timing actually, I've started Vazkepa in a couple of patients since we last spoke.",
+          3: "Come in, grab a seat. Five minutes. I've got a handful of patients on Vazkepa now, mostly when I remember at a script renewal.",
+          4: "Come in, grab a seat. I've only got about five minutes. I've got a fair few on Vazkepa now, so what's new?",
+          5: "Come in, grab a seat. Five minutes. Funny timing, a GP from down the road rang last week asking how we flag our Vazkepa patients."
+        },
+        nguyen: {
+          1: "G'day, come on in. One of my heart patients came back from the cardiologist on Vazkepa, so I'm curious. What did you want to talk about?",
+          2: "G'day, come on in. I've started a couple of patients on Vazkepa, so I've got a few thoughts for you.",
+          3: "G'day, come on in. I've got a handful of heart patients on Vazkepa now, so it's good timing.",
+          4: "G'day, come on in. Quite a few of my heart patients are on Vazkepa now, so it's good to catch up.",
+          5: "G'day, come on in. Good to see you. The other GPs here keep asking me about Vazkepa since I've been using it so much."
+        },
+        collins: {
+          1: "Come in. I've got a few minutes. I've been reading up on REDUCE-IT and I've got questions, so let's get into it.",
+          2: "Come in. I've started a couple of post-MI patients on Vazkepa, but I'm not sure it's doing much for one of them. What have you got?",
+          3: "Come in. I've got a few minutes. I've put a handful of post-MI patients on Vazkepa, though I'll admit I'm not systematic about it.",
+          4: "Come in. I've got a few minutes. I've got a good number of post-MI patients on Vazkepa now, so I'm interested in what else you can tell me.",
+          5: "Come in. I've got a few minutes. I talked our registrars through how I use Vazkepa last week, so I've had a few questions thrown at me."
+        }
+      };
+      return {
+        label: "Vazkepa", DOCTORS, LEVELS, OPENINGS,
+        line: "VAZKEPA (icosapent ethyl) 998 mg capsules, CSL Seqirus",
+        foot: "For internal sales training only. Doctors are fictional. Product facts are summarised from CSL Seqirus approved materials; review the full Product Information before prescribing. Calls are processed by ElevenLabs for training only."
+      };
+    })(),
+    neffy: (() => {
+      const DOCTORS = {
+        doyle: {
+          agent: "agent_3201m548nwb3fn1sp4b3qewrgddt",
+          name: "Dr Karen Doyle",
+          where: "GP, bulk-billing practice in Sunbury",
+          time: "About 5 minutes"
+        },
+        nguyen: {
+          agent: "agent_4901m548nsykffjascjtwtyhxrnc",
+          name: "Dr Tom Nguyen",
+          where: "GP, family practice in Footscray",
+          time: "About 5 minutes"
+        },
+        collins: {
+          agent: "agent_5801m548nqbkfg8a579vy33wg34q",
+          name: "Dr Andrew Collins",
+          where: "GP who reads the journals closely, Geelong",
+          time: "About 8 minutes"
+        }
+      };
+      // Seqirus adoption ladder: where this doctor is with neffy. The level name is passed to the agent as a dynamic variable.
+      const LEVELS = {
+        1: { name: "Non User", note: "Knows of neffy but has never prescribed it", objective: "Uncover what is holding them back and link neffy to their patients. Aim for agreement to offer neffy to one specific patient at their next adrenaline renewal." },
+        2: { name: "Trial User", note: "Has switched one or two patients to neffy at renewal", objective: "Follow up their experience, check patient selection and handle any issues. Aim for offering it to more suitable patients." },
+        3: { name: "User", note: "Offers neffy to some patients, but not routinely", objective: "Find what stops it becoming routine. Aim for offering it consistently to a clear group of renewal patients." },
+        4: { name: "Loyal User", note: "Offers neffy routinely at adrenaline renewal", objective: "Reinforce appropriate use and explore another suitable group within the indication, such as families with children of the right weight." },
+        5: { name: "Advocate", note: "Loyal user who talks positively about neffy to colleagues", objective: "Maintain the relationship and keep to approved claims. Never ask them to promote neffy to colleagues; if appropriate, offer a properly arranged educational meeting through CSL Seqirus." }
+      };
+      // What each doctor says first, by adoption level, so the call opens in the right place.
+      const OPENINGS = {
+        doyle: {
+          1: "Come in, grab a seat. I've only got about five minutes. Is this the nasal adrenaline one I keep seeing on allergist letters?",
+          2: "Come in. Only five minutes, sorry. Good timing actually, I've tried neffy on a couple of patients since we last spoke.",
+          3: "Come in, grab a seat. Five minutes. I've switched a handful of patients to neffy, mostly the ones who asked.",
+          4: "Come in, grab a seat. I've only got about five minutes. neffy's pretty standard at my renewals now, so what's new?",
+          5: "Come in, grab a seat. Five minutes. A clinic down the road asked how we handle neffy at renewals, so I've been talking about it a fair bit."
+        },
+        nguyen: {
+          1: "G'day, come on in. One of my patients came back from the allergist on neffy, so I'm curious. What did you want to talk about?",
+          2: "G'day, come on in. I've switched a couple of patients to neffy, so I've got a few thoughts for you.",
+          3: "G'day, come on in. I've got a handful of patients on neffy now, mostly the needle-phobic ones.",
+          4: "G'day, come on in. Plenty of my families are on neffy now, so it's good to catch up.",
+          5: "G'day, come on in. Good to see you. The other GPs here keep asking me about neffy since my families started carrying it."
+        },
+        collins: {
+          1: "Come in. I've got a few minutes. I've been reading up on neffy and I've got questions about the data, so let's get into it.",
+          2: "Come in. I've put a couple of patients on neffy, but I'll be honest, I'm still not sure how far to trust it. What have you got?",
+          3: "Come in. I've got a few minutes. I've switched a handful of patients to neffy, mostly when they ask, so I'm still making up my mind.",
+          4: "Come in. I've got a few minutes. I'm offering neffy fairly routinely at renewals now, so I'm interested in what else you can tell me.",
+          5: "Come in. I've got a few minutes. I shared a neffy case at our clinical meeting recently, so the registrars have been peppering me with questions."
+        }
+      };
+      return {
+        label: "neffy", DOCTORS, LEVELS, OPENINGS,
+        line: "neffy (adrenaline) nasal spray 1 mg and 2 mg, CSL Seqirus",
+        foot: "For internal sales training only. Doctors are fictional. Product facts are summarised from CSL Seqirus approved materials (AU-NEF-26-0138, AU-NEF-26-0060); review the full Product Information before prescribing. Calls are processed by ElevenLabs for training only."
+      };
+    })()
+  };
+
+  const cfg = window.CALLREADY;
+  const sb = supabase.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey);
+  const $ = (id) => document.getElementById(id);
+  const qs = new URLSearchParams(location.search);
+  const LINK_LIFE_MS = 12 * 60 * 1000; // ElevenLabs signed links must be used within 15 minutes
+  let inCall = false;
+
+  function store(k, v) { try { v === undefined ? null : localStorage.setItem(k, v); return localStorage.getItem(k); } catch (e) { return null; } }
+
+  // ---- Choose product, doctor and level (same rules as the old pages) ----
+  const PRODUCT_KEY = "callready-last-product";
+  const pKey = PRODUCTS[qs.get("p")] ? qs.get("p") : (PRODUCTS[store(PRODUCT_KEY)] ? store(PRODUCT_KEY) : "vazkepa");
+  store(PRODUCT_KEY, pKey);
+  const P = PRODUCTS[pKey];
+  const KEYS = Object.keys(P.DOCTORS);
+  const LAST = "simclinic-" + pKey + "-last-doctor"; // keeps reps' saved choices from the old pages
+  const dKey = (() => {
+    const asked = qs.get("d");
+    if (asked && P.DOCTORS[asked]) return asked;
+    const pool = KEYS.filter(k => k !== store(LAST));
+    return pool[Math.floor(Math.random() * pool.length)];
+  })();
+  store(LAST, dKey);
+  const doc = P.DOCTORS[dKey];
+  const levelNo = P.LEVELS[qs.get("l")] ? Number(qs.get("l")) : 1 + Math.floor(Math.random() * 5);
+  const level = P.LEVELS[levelNo];
+  const link = (p, d, l) => "?p=" + p + (d ? "&d=" + d : "") + (l ? "&l=" + l : "");
+
+  document.querySelectorAll("#productNav a").forEach(a => {
+    a.href = link(a.dataset.p, null, levelNo);
+    if (a.dataset.p === pKey) a.setAttribute("aria-current", "page");
+  });
+  KEYS.forEach(k => {
+    const a = document.createElement("a");
+    a.href = link(pKey, k, levelNo);
+    a.textContent = P.DOCTORS[k].name;
+    if (k === dKey) a.setAttribute("aria-current", "true");
+    $("pick").appendChild(a);
+  });
+  Object.keys(P.LEVELS).forEach(n => {
+    const a = document.createElement("a");
+    a.href = link(pKey, dKey, n);
+    a.textContent = n + ". " + P.LEVELS[n].name;
+    if (Number(n) === levelNo) a.setAttribute("aria-current", "true");
+    $("pickLevel").appendChild(a);
+  });
+
+  $("name").textContent = doc.name;
+  $("where").textContent = doc.where;
+  $("time").textContent = doc.time;
+  $("level").textContent = levelNo + ". " + level.name + ": " + level.note.charAt(0).toLowerCase() + level.note.slice(1);
+  $("objective").textContent = level.objective;
+  $("productLine").textContent = P.line;
+  $("footNote").textContent = P.foot;
+  $("reference").appendChild($("ref-" + pKey).content.cloneNode(true));
+  document.title = "CallReady " + P.label + ": " + doc.name;
+
+  function callState(text, isError) {
+    $("callState").innerHTML = text;
+    $("callState").classList.toggle("error", !!isError);
+  }
+
+  // ---- Signed-in check, then a signed call link from the CallReady API ----
+  async function getCallLink(session) {
+    const res = await fetch(cfg.apiBase + "/signed-url?agent_id=" + encodeURIComponent(doc.agent), {
+      headers: { Authorization: "Bearer " + session.access_token }
+    });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) throw Object.assign(new Error(body.error || ("HTTP " + res.status)), { status: res.status });
+    return body; // { signed_url, user_id, rep_email }
+  }
+
+  async function start() {
+    const { data } = await sb.auth.getSession();
+    if (!data.session) { location.replace("./"); return; }
+    $("whoEmail").textContent = data.session.user.email;
+
+    let call;
+    try {
+      call = await getCallLink(data.session);
+    } catch (e) {
+      if (e.status === 401) { await sb.auth.signOut(); location.replace("./"); return; }
+      callState(e.status === 403
+        ? "Your account can’t start this call. Ask your trainer to check your invite."
+        : "The call couldn’t be set up. Reload the page to try again.", true);
+      console.error(e);
+      return;
+    }
+
+    const widget = document.createElement("elevenlabs-convai");
+    widget.setAttribute("signed-url", call.signed_url);
+    widget.setAttribute("dynamic-variables", JSON.stringify({
+      adoption_level: level.name,
+      opening_line: P.OPENINGS[dKey][levelNo],
+      rep_email: call.rep_email,
+      user_id: call.user_id
+    }));
+    widget.addEventListener("elevenlabs-convai:call", () => { inCall = true; });
+    document.body.appendChild(widget);
+    callState("When you’re ready, tap the <b>call button</b> in the bottom corner and allow your microphone.");
+
+    // A signed link expires if unused, so fetch a fresh one while the rep reads the brief.
+    setInterval(async () => {
+      if (inCall) return;
+      try {
+        const s = (await sb.auth.getSession()).data.session;
+        if (s) widget.setAttribute("signed-url", (await getCallLink(s)).signed_url);
+      } catch (e) { console.warn("Couldn’t refresh call link", e); }
+    }, LINK_LIFE_MS);
+  }
+
+  $("signOut").addEventListener("click", async () => { await sb.auth.signOut(); location.replace("./"); });
+  start();
+</script>
+<script src="https://unpkg.com/@elevenlabs/convai-widget-embed" async type="text/javascript"></script>
+</body>
+</html>
