@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en-AU">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>CallReady: results</title>
+<link rel="icon" href="reestv-logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="callready.css">
+<style>
+  main { max-width: 980px; }
+  .back { display: inline-block; margin: 0 0 20px; color: var(--muted); text-decoration: none; font-size: 15px; }
+  .back::before { content: "← "; color: var(--teal); }
+  .back:hover { color: var(--teal); }
+  h1.title { font-size: clamp(36px, 7vw, 52px); line-height: 1.05; margin: 0 0 8px; font-weight: 900; letter-spacing: -0.03em; }
+  .sub { color: var(--muted); margin: 0 0 28px; }
+  select {
+    font: inherit; font-size: 15px; color: var(--text); background: var(--panel);
+    border: 1px solid var(--line); border-radius: 999px; padding: 9px 14px;
+  }
+  .msg { color: var(--muted); min-height: 1.5em; margin: 10px 0; }
+  .msg.error { color: var(--miss); }
+
+  .tabs { display: flex; gap: 6px; margin-bottom: 20px; flex-wrap: wrap; }
+  .tabs button[aria-selected="true"] {
+    color: var(--bg); font-weight: 600; border-color: transparent;
+    background: linear-gradient(90deg, var(--teal), var(--teal-2));
+  }
+
+  .bar { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+  .totals { color: var(--muted); }
+  .totals strong { color: var(--teal); font-size: 1.2rem; font-weight: 800; }
+  .controls { display: flex; gap: 8px; flex-wrap: wrap; }
+
+  #list.card { padding: 4px 22px; }
+  .call { border-top: 1px solid var(--line); }
+  .call:first-child { border-top: 0; }
+  .call summary {
+    list-style: none; cursor: pointer; padding: 16px 0;
+    display: grid; grid-template-columns: 10rem 1fr auto auto; gap: 16px; align-items: center; font-weight: 400;
+  }
+  .call summary::-webkit-details-marker { display: none; }
+  .call[open] summary { border-bottom: 1px dashed var(--line); }
+  .when { color: var(--muted); font-variant-numeric: tabular-nums; font-size: 15px; }
+  .subject strong { display: block; font-weight: 700; }
+  .subject span { display: block; color: var(--muted); font-size: 0.9rem; }
+  .subject .rep { color: var(--teal); }
+  .score { font-weight: 800; color: var(--teal); font-variant-numeric: tabular-nums; min-width: 3.5rem; text-align: right; }
+  .score.none { color: var(--faint); font-weight: 500; font-size: 14px; }
+
+  /* One mark per criterion, in a fixed order. Met = teal, missed = orange, not assessed = dark. */
+  .strip { display: flex; gap: 3px; }
+  .strip i { width: 10px; height: 22px; border-radius: 3px; background: #1E3A3E; }
+  .strip i.yes { background: var(--teal); box-shadow: 0 0 6px rgba(25, 227, 210, 0.5); }
+  .strip i.no { background: var(--miss); }
+
+  .detail { padding: 16px 0 22px; display: grid; gap: 20px; }
+  .crit { display: grid; grid-template-columns: 5rem 1fr; gap: 10px 12px; margin: 0; }
+  .crit dt { font-weight: 700; font-size: 0.9rem; }
+  .crit dt.yes { color: var(--teal); } .crit dt.no { color: var(--miss); } .crit dt.na { color: var(--faint); }
+  .crit dd { margin: 0; }
+  .crit dd b { display: block; font-weight: 600; }
+  .crit dd span { display: block; color: var(--muted); font-size: 15px; }
+  .field h3 { font-size: 12px; margin: 0 0 4px; color: var(--teal); font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; }
+  .field p { margin: 0; max-width: 72ch; white-space: pre-wrap; color: var(--muted); }
+  .field blockquote { margin: 0 0 6px; padding-left: 12px; border-left: 2px solid var(--edge); color: var(--text); }
+  .empty { color: var(--muted); padding: 24px 0; }
+
+  @media (max-width: 640px) {
+    .call summary { grid-template-columns: 1fr auto; }
+    .when { grid-column: 1 / -1; }
+    .strip { grid-column: 1 / -1; order: 5; }
+    #list.card { padding: 4px 16px; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <header class="top">
+    <a class="wordmark" href="practice.html">Call<span class="ready">Ready</span></a>
+    <span class="by"><span>by</span><img src="reestv-logo.png" alt="REESTV" width="58" height="36"></span>
+  </header>
+  <div class="who"><span>Signed in as <b id="whoEmail">…</b></span><button type="button" id="signOut">Sign out</button></div>
+
+  <a class="back" href="practice.html">Back to practice</a>
+  <h1 class="title" id="title">My results</h1>
+  <p class="sub" id="sub">Your practice calls, scored against each product’s criteria.</p>
+
+  <p class="msg" id="msg" role="status">Loading…</p>
+
+  <section id="results" hidden>
+    <div class="tabs" role="tablist" id="tabs"></div>
+    <div class="bar">
+      <div class="totals" id="totals"></div>
+      <div class="controls">
+        <select id="repFilter" aria-label="Filter by rep" hidden></select>
+        <select id="doctorFilter" aria-label="Filter by doctor"></select>
+        <button type="button" id="refresh">Refresh</button>
+      </div>
+    </div>
+    <div id="list" class="card"></div>
+  </section>
+
+  <footer class="foot">
+    <p>For internal sales training only. Doctors are fictional. A call appears here a few minutes after it ends.</p>
+    <p>CallReady is built by REESTV · <a href="https://www.callready.com.au">www.callready.com.au</a></p>
+  </footer>
+</main>
+
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js"></script>
+<script>
+  const cfg = window.CALLREADY;
+  const sb = supabase.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey);
+  const $ = (id) => document.getElementById(id);
+  const el = (tag, cls, text) => {
+    const n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (text != null) n.textContent = text;
+    return n;
+  };
+
+  // Criteria always show in this order, whichever product. Matched on the end of the key.
+  const ORDER = ["discovery", "unmet_need", "hidden_concern", "efficacy_accuracy", "administration",
+                 "dosing", "dosing_safety", "pbs", "approved_claims", "adverse_event", "commitment"];
+  const rank = (key) => {
+    const i = ORDER.findIndex((s) => key.endsWith("_" + s));
+    return i < 0 ? 99 : i;
+  };
+  const prettify = (key) => key.replace(/^(vaz|neffy)_/, "").replace(/_/g, " ").replace(/^\w/, (c) => c.toUpperCase());
+
+  const when = new Intl.DateTimeFormat("en-AU", {
+    timeZone: "Australia/Melbourne", weekday: "short", day: "numeric", month: "short",
+    hour: "numeric", minute: "2-digit"
+  });
+
+  let me = null;          // { id, role }
+  let calls = [];         // shaped call rows
+  let products = [];      // [{ slug, name }]
+  let labels = {};        // criterion key -> label
+  let levels = {};        // level number -> label
+  let people = {};        // user id -> display name
+  let activeTab = "all";
+
+  async function start() {
+    const { data } = await sb.auth.getSession();
+    if (!data.session) { location.replace("./"); return; }
+    $("whoEmail").textContent = data.session.user.email;
+
+    const { data: profile } = await sb.from("profiles").select("id, role").eq("id", data.session.user.id).maybeSingle();
+    if (!profile) {
+      say("Your account isn’t set up for results yet. Ask your trainer to check your invite.", true);
+      return;
+    }
+    me = profile;
+    if (me.role === "manager") {
+      $("title").textContent = "Team results";
+      $("sub").textContent = "Practice calls from you and your team, scored against each product’s criteria.";
+    } else if (me.role === "admin") {
+      $("title").textContent = "All results";
+      $("sub").textContent = "Every practice call in this pilot, scored against each product’s criteria.";
+    }
+    await load();
+  }
+
+  async function load() {
+    $("refresh").disabled = true;
+    say("Loading…");
+    try {
+      const [c, crit, lv, pr, ppl] = await Promise.all([
+        sb.from("calls")
+          .select(`id, created_at, started_at, duration_secs, adoption_level, score, max_score, summary, user_id,
+                   agent:agents ( name, doctor:doctors ( name ), agent_products ( product:products ( slug, name ) ) ),
+                   results:call_criteria_results ( criterion_key, result, rationale ),
+                   quotes:call_quotes ( quote )`)
+          .order("created_at", { ascending: false })
+          .limit(1000),
+        sb.from("criteria").select("key, label"),
+        sb.from("adoption_levels").select("level, label"),
+        sb.from("products").select("slug, name").eq("active", true).order("name"),
+        sb.from("profiles").select("id, full_name, email")
+      ]);
+      const failed = [c, crit, lv, pr, ppl].find((r) => r.error);
+      if (failed) throw failed.error;
+
+      labels = Object.fromEntries(crit.data.map((r) => [r.key, r.label]));
+      levels = Object.fromEntries(lv.data.map((r) => [r.level, r.label]));
+      products = pr.data;
+      people = Object.fromEntries(ppl.data.map((p) => [p.id, p.full_name || p.email]));
+
+      calls = c.data.map((r) => ({
+        id: r.id,
+        at: new Date(r.started_at || r.created_at),
+        secs: r.duration_secs,
+        level: r.adoption_level,
+        score: r.score,
+        max: r.max_score,
+        summary: r.summary,
+        userId: r.user_id,
+        doctor: r.agent?.doctor?.name || r.agent?.name || "Unknown doctor",
+        agentName: r.agent?.name || "",
+        products: (r.agent?.agent_products || []).map((ap) => ap.product?.slug).filter(Boolean),
+        results: (r.results || []).slice().sort((a, b) => rank(a.criterion_key) - rank(b.criterion_key)),
+        quotes: (r.quotes || []).map((q) => q.quote)
+      }));
+
+      say("");
+      $("results").hidden = false;
+      renderTabs();
+    } catch (err) {
+      console.error(err);
+      $("results").hidden = true;
+      say(/fetch|network/i.test(err.message || "")
+        ? "The results couldn’t be reached. If you’re on a company network, it may be blocked."
+        : "The results didn’t load. Reload the page to try again.", true);
+    } finally {
+      $("refresh").disabled = false;
+    }
+  }
+
+  function say(text, isError) {
+    $("msg").textContent = text || "";
+    $("msg").classList.toggle("error", !!isError);
+    $("msg").hidden = !text;
+  }
+
+  function inTab(call) {
+    return activeTab === "all" || call.products.includes(activeTab);
+  }
+
+  function renderTabs() {
+    const tabs = $("tabs");
+    tabs.replaceChildren();
+    [{ slug: "all", name: "All products" }, ...products].forEach((p) => {
+      const b = el("button", "", p.name);
+      b.type = "button";
+      b.setAttribute("role", "tab");
+      b.setAttribute("aria-selected", p.slug === activeTab ? "true" : "false");
+      b.addEventListener("click", () => { activeTab = p.slug; renderTabs(); });
+      tabs.append(b);
+    });
+
+    const inThisTab = calls.filter(inTab);
+    fillSelect($("doctorFilter"), "All doctors", [...new Set(inThisTab.map((c) => c.doctor))].sort());
+
+    // Rep filter only when this person can see calls from more than one rep
+    const reps = [...new Set(inThisTab.map((c) => c.userId).filter(Boolean))];
+    const repSel = $("repFilter");
+    if (me.role !== "rep" && reps.length > 1) {
+      const opts = reps.map((id) => [id, people[id] || "Unknown rep"]).sort((a, b) => a[1].localeCompare(b[1]));
+      fillSelect(repSel, "All reps", opts);
+      repSel.hidden = false;
+    } else {
+      repSel.hidden = true;
+      repSel.value = "";
+    }
+    renderList();
+  }
+
+  function fillSelect(sel, allLabel, items) {
+    const prev = sel.value;
+    sel.replaceChildren(new Option(allLabel, ""));
+    items.forEach((it) => {
+      const [value, text] = Array.isArray(it) ? it : [it, it];
+      sel.append(new Option(text, value));
+    });
+    sel.value = [...sel.options].some((o) => o.value === prev) ? prev : "";
+  }
+
+  function verdict(result) {
+    if (result === "success") return ["yes", "Met"];
+    if (result === "failure") return ["no", "Missed"];
+    return ["na", "N/A"];
+  }
+
+  function renderList() {
+    const doc = $("doctorFilter").value;
+    const rep = $("repFilter").hidden ? "" : $("repFilter").value;
+    const rows = calls.filter((c) => inTab(c) && (!doc || c.doctor === doc) && (!rep || c.userId === rep));
+
+    // Totals: calls with nothing scored (e.g. dropped straight away) don't count towards the average
+    const scored = rows.filter((c) => c.max > 0);
+    const totals = $("totals");
+    totals.replaceChildren(el("strong", "", String(rows.length)), ` call${rows.length === 1 ? "" : "s"}`);
+    if (scored.length) {
+      const avg = Math.round(scored.reduce((a, c) => a + c.score / c.max, 0) / scored.length * 100);
+      totals.append(", average score ", el("strong", "", avg + "%"));
+    }
+
+    const list = $("list");
+    list.replaceChildren();
+    if (!rows.length) {
+      list.append(el("p", "empty", calls.length
+        ? "No calls match these filters."
+        : "No calls yet. Your results appear here a few minutes after a practice call ends."));
+      return;
+    }
+
+    const showRep = me.role !== "rep";
+    rows.forEach((c) => {
+      const d = el("details", "call");
+      const s = el("summary");
+      s.append(el("span", "when", when.format(c.at)));
+
+      const subject = el("span", "subject");
+      subject.append(el("strong", "", c.doctor));
+      const bits = [];
+      if (activeTab === "all" && c.products.length) {
+        bits.push(c.products.map((slug) => products.find((p) => p.slug === slug)?.name || slug).join(" + "));
+      }
+      if (c.level) bits.push(c.level + ". " + (levels[c.level] || ""));
+      if (bits.length) subject.append(el("span", "", bits.join(" · ")));
+      if (showRep) subject.append(el("span", "rep", c.userId ? (people[c.userId] || "Unknown rep") : "Before sign-in"));
+      s.append(subject);
+
+      const strip = el("span", "strip");
+      strip.setAttribute("aria-hidden", "true");
+      c.results.forEach((r) => strip.append(el("i", verdict(r.result)[0])));
+      s.append(strip);
+
+      s.append(c.max > 0
+        ? el("span", "score", c.score + "/" + c.max)
+        : el("span", "score none", "Not scored"));
+      d.append(s);
+
+      const body = el("div", "detail");
+      if (!(c.max > 0)) {
+        body.append(el("p", "empty", "This call was too short to score. It may have been dropped or ended straight away."));
+      }
+      if (c.results.length) {
+        const dl = el("dl", "crit");
+        c.results.forEach((r) => {
+          const [cls, word] = verdict(r.result);
+          const dd = el("dd");
+          dd.append(el("b", "", labels[r.criterion_key] || prettify(r.criterion_key)));
+          if (r.rationale) dd.append(el("span", "", r.rationale));
+          dl.append(el("dt", cls, word), dd);
+        });
+        body.append(dl);
+      }
+      if (c.summary) body.append(field("Call summary", c.summary));
+      if (c.quotes.length) {
+        const f = el("div", "field");
+        f.append(el("h3", "", "Standout moments"));
+        c.quotes.forEach((q) => f.append(el("blockquote", "", q)));
+        body.append(f);
+      }
+      if (c.secs) body.append(field("Call length", Math.floor(c.secs / 60) + " min " + (c.secs % 60) + " sec"));
+      d.append(body);
+      list.append(d);
+    });
+  }
+
+  function field(title, text) {
+    const f = el("div", "field");
+    f.append(el("h3", "", title), el("p", "", text));
+    return f;
+  }
+
+  $("refresh").addEventListener("click", load);
+  $("doctorFilter").addEventListener("change", renderList);
+  $("repFilter").addEventListener("change", renderList);
+  $("signOut").addEventListener("click", async () => { await sb.auth.signOut(); location.replace("./"); });
+  start();
+</script>
+</body>
+</html>
