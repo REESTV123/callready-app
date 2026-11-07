@@ -41,10 +41,12 @@ a { color: var(--teal); }
   background: linear-gradient(180deg, #2CF5DF 0%, #12C9C9 100%);
   -webkit-background-clip: text; background-clip: text; color: transparent;
 }
-.by { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 13px; }
-.by img { height: 36px; width: auto; display: block; }
-.by .help { margin-right: 6px; color: var(--muted); font-size: 15px; font-weight: 600; text-decoration: none; }
-.by .help:hover { color: var(--teal); }
+.help-btn {
+  display: inline-flex; align-items: center; padding: 9px 20px; border-radius: 999px;
+  border: 1.5px solid var(--edge); color: var(--teal); background: var(--panel);
+  font: 600 15px "Figtree", sans-serif; text-decoration: none; white-space: nowrap;
+}
+.help-btn:hover { background: var(--panel-2); color: var(--text); }
 
 .eyebrow, h1.label, .ladder h2 {
   margin: 0 0 12px; color: var(--teal); font-weight: 600; font-size: 13px;
