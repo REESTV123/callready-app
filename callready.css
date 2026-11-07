@@ -43,6 +43,8 @@ a { color: var(--teal); }
 }
 .by { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 13px; }
 .by img { height: 36px; width: auto; display: block; }
+.by .help { margin-right: 6px; color: var(--muted); font-size: 15px; font-weight: 600; text-decoration: none; }
+.by .help:hover { color: var(--teal); }
 
 .eyebrow, h1.label, .ladder h2 {
   margin: 0 0 12px; color: var(--teal); font-weight: 600; font-size: 13px;
