@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en-AU">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>CallReady: video avatar demo</title>
+<link rel="icon" href="reestv-logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="callready.css">
+<style>
+  main { max-width: 880px; }
+  h1.title { font-weight: 800; font-size: 32px; margin: 0 0 6px; }
+  .sub { color: var(--muted); margin: 0 0 22px; }
+  .stage { aspect-ratio: 16 / 9; background: #000; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; display: grid; place-items: center; position: relative; }
+  .stage video { width: 100%; height: 100%; object-fit: cover; }
+  .stage .idle { color: var(--faint); text-align: center; padding: 20px; }
+  .timer { position: absolute; top: 12px; right: 14px; background: rgba(3,9,11,.7); color: var(--teal); font-weight: 700; padding: 4px 10px; border-radius: 99px; font-size: 14px; }
+  .controls { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin: 16px 0; color: var(--muted); }
+  select { font: inherit; color: var(--text); background: var(--bg-2); border: 1px solid var(--line); border-radius: 8px; padding: 9px 10px; max-width: 280px; }
+  .controls label { display: flex; gap: 8px; align-items: center; }
+  .controls input { accent-color: var(--teal); width: 18px; height: 18px; }
+  button.primary[disabled], button[disabled] { opacity: .5; cursor: default; }
+  .brief { padding: 18px 22px; margin-top: 8px; }
+  .brief dl { margin: 0; display: grid; grid-template-columns: 9em 1fr; gap: 6px 14px; }
+  .brief dt { color: var(--teal); }
+  .brief dd { margin: 0; }
+  #log { font: 12px ui-monospace, monospace; background: var(--bg-2); border: 1px solid var(--line); border-radius: 8px; padding: 10px; height: 140px; overflow: auto; white-space: pre-wrap; color: var(--faint); margin-top: 18px; }
+  details summary { cursor: pointer; color: var(--faint); font-size: 14px; margin-top: 18px; }
+  @media (max-width: 560px) { .brief dl { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<main>
+  <header class="top">
+    <a class="wordmark" href="demo.html">Call<span class="ready">Ready</span></a>
+    <a class="help-btn" href="admin.html">Admin</a>
+  </header>
+  <div class="who"><span>Signed in as <b id="whoEmail">…</b></span><button type="button" id="signOut">Sign out</button></div>
+
+  <h1 class="title">Dr Tom Nguyen, face to face</h1>
+  <p class="sub">The same CallReady practice call, with a live video avatar. ElevenLabs runs the conversation; the avatar gives the doctor a face.</p>
+  <p class="msg" id="msg" role="status" aria-live="polite"></p>
+
+  <div id="app" hidden>
+    <div class="stage" id="stage">
+      <div class="idle" id="idle">Press <b>Start</b>, allow your microphone, and begin your detail when Dr Nguyen greets you.</div>
+      <span class="timer" id="timer" hidden></span>
+    </div>
+
+    <div class="controls">
+      <label><input type="checkbox" id="sandbox" checked> Sandbox (free, 1 minute, “Wayne” avatar)</label>
+      <select id="avatar" disabled aria-label="Avatar"><option>Loading avatars…</option></select>
+      <button class="primary" type="button" id="start">Start</button>
+      <button type="button" id="stop" disabled>End</button>
+    </div>
+
+    <section class="brief card">
+      <dl>
+        <dt>Doctor</dt><dd>Dr Tom Nguyen, GP, family practice in Footscray</dd>
+        <dt>Adoption ladder</dt><dd>3. Trial: has prescribed Corvina privately for two patients</dd>
+        <dt>Your objective</dt><dd>Follow up how his patients are going and handle anything that comes up. Aim for a clear next step.</dd>
+        <dt>Product</dt><dd>Corvina, once-nightly tablet for chronic insomnia in adults (fictional)</dd>
+        <dt>Time</dt><dd id="timeNote">Up to 2 minutes per session</dd>
+      </dl>
+    </section>
+
+    <details><summary>Connection log</summary><div id="log"></div></details>
+  </div>
+</main>
+
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/livekit-client@2.5.7/dist/livekit-client.umd.js"></script>
+<script src="tenant.js"></script>
+<script>
+  const { Room, RoomEvent, Track } = LivekitClient;
+  const cfg = window.CALLREADY;
+  const sb = CallReadyTenant.client();
+  const $ = (id) => document.getElementById(id);
+  const log = (m) => { $("log").textContent += new Date().toLocaleTimeString("en-AU") + "  " + m + "\n"; $("log").scrollTop = 1e9; };
+  let session = null, room = null, current = null, tick = null;
+
+  function say(text, isError) {
+    $("msg").textContent = text || "";
+    $("msg").classList.toggle("error", !!isError);
+  }
+
+  async function api(path, method, body) {
+    const s = (await sb.auth.getSession()).data.session;
+    const res = await fetch(cfg.apiBase + path, {
+      method,
+      headers: { Authorization: "Bearer " + s.access_token, "content-type": "application/json" },
+      body: body ? JSON.stringify(body) : undefined
+    });
+    const out = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(out.error || ("HTTP " + res.status));
+    return out;
+  }
+
+  async function start() {
+    if (!CallReadyTenant.isDemo()) { say("Sign in at app.callready.com.au with your demo admin email first.", true); return; }
+    const { data } = await sb.auth.getSession();
+    if (!data.session) { location.replace("./"); return; }
+    session = data.session;
+    $("whoEmail").textContent = session.user.email;
+
+    const { data: access } = await sb.rpc("demo_access");
+    if (!access || access.role !== "admin") { say("This page is for the CallReady admin only.", true); return; }
+    $("app").hidden = false;
+
+    try {
+      const j = await api("/avatar/avatars", "GET");
+      const list = j?.data?.results || j?.data?.avatars || j?.data || j?.results || [];
+      const sel = $("avatar");
+      sel.replaceChildren();
+      (Array.isArray(list) ? list : []).forEach((a) => sel.add(new Option(a.name || a.id, a.id)));
+      if (!sel.options.length) sel.add(new Option("No avatars returned", ""));
+      log("Loaded " + sel.options.length + " avatars");
+    } catch (e) {
+      log("Avatar list failed: " + e.message);
+      say("Couldn’t load the avatar list: " + e.message, true);
+    }
+  }
+
+  $("sandbox").addEventListener("change", () => { $("avatar").disabled = $("sandbox").checked; });
+
+  $("start").addEventListener("click", async () => {
+    $("start").disabled = true; say("");
+    try {
+      log("Requesting session…");
+      current = await api("/avatar/session", "POST", { sandbox: $("sandbox").checked, avatarId: $("avatar").value });
+      log("Session " + current.session_id + " started (max " + current.max_session_duration + "s)");
+
+      room = new Room({ adaptiveStream: true });
+      room.on(RoomEvent.TrackSubscribed, (track) => {
+        if (track.kind === Track.Kind.Video) { $("idle").hidden = true; $("stage").prepend(track.attach()); }
+        if (track.kind === Track.Kind.Audio) document.body.appendChild(track.attach());
+        log("Subscribed to " + track.kind);
+      });
+      room.on(RoomEvent.DataReceived, (payload, _p, _k, topic) => {
+        try {
+          const e = JSON.parse(new TextDecoder().decode(payload));
+          const t = e.elevenlabs_event_type || e.type || topic;
+          const txt = e.data?.user_transcript || e.data?.agent_response || e.data?.text || "";
+          if (txt) log("[" + t + "] " + (typeof txt === "string" ? txt : JSON.stringify(txt)));
+        } catch (err) { /* not JSON */ }
+      });
+      room.on(RoomEvent.Disconnected, () => { log("Disconnected"); finish(); });
+
+      await room.connect(current.livekit_url, current.livekit_client_token);
+      await room.localParticipant.setMicrophoneEnabled(true);
+      log("Connected. Mic is live.");
+      $("stop").disabled = false;
+      countdown(current.max_session_duration || 120);
+    } catch (e) {
+      log("Error: " + e.message);
+      say("The session didn’t start: " + e.message, true);
+      finish();
+    }
+  });
+
+  $("stop").addEventListener("click", () => { if (room) room.disconnect(); else finish(); });
+
+  function countdown(secs) {
+    const end = Date.now() + secs * 1000;
+    $("timer").hidden = false;
+    clearInterval(tick);
+    tick = setInterval(() => {
+      const left = Math.max(0, Math.round((end - Date.now()) / 1000));
+      $("timer").textContent = Math.floor(left / 60) + ":" + String(left % 60).padStart(2, "0");
+      if (!left) clearInterval(tick);
+    }, 500);
+  }
+
+  // Stop billing as soon as the session ends, however it ends.
+  async function finish() {
+    clearInterval(tick);
+    $("timer").hidden = true;
+    $("start").disabled = false; $("stop").disabled = true;
+    document.querySelectorAll("#stage video, body > audio").forEach((n) => n.remove());
+    $("idle").hidden = false;
+    room = null;
+    if (current && current.session_id) {
+      const id = current.session_id; current = null;
+      try { await api("/avatar/stop", "POST", { session_id: id }); log("Session stopped"); }
+      catch (e) { log("Stop request failed (the session still ends at its time cap): " + e.message); }
+    }
+  }
+
+  window.addEventListener("pagehide", () => {
+    if (current && current.session_id && session) {
+      fetch(cfg.apiBase + "/avatar/stop", {
+        method: "POST", keepalive: true,
+        headers: { Authorization: "Bearer " + session.access_token, "content-type": "application/json" },
+        body: JSON.stringify({ session_id: current.session_id })
+      });
+    }
+  });
+
+  $("signOut").addEventListener("click", () => CallReadyTenant.signOut());
+  start();
+</script>
+</body>
+</html>
