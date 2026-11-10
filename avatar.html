@@ -67,7 +67,7 @@
       </dl>
     </section>
 
-    <details><summary>Connection log</summary><div id="log"></div></details>
+    <details id="logBox" hidden><summary>Connection log</summary><div id="log"></div></details>
   </div>
 </main>
 
@@ -82,6 +82,8 @@
   const $ = (id) => document.getElementById(id);
   const log = (m) => { $("log").textContent += new Date().toLocaleTimeString("en-AU") + "  " + m + "\n"; $("log").scrollTop = 1e9; };
   let session = null, room = null, current = null, tick = null;
+  // Connection log only when the address ends in ?debug
+  if (new URLSearchParams(location.search).has("debug")) { $("logBox").hidden = false; $("logBox").open = true; }
 
   function say(text, isError) {
     $("msg").textContent = text || "";
