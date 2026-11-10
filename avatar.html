@@ -51,8 +51,8 @@
     </div>
 
     <div class="controls">
-      <label><input type="checkbox" id="sandbox" checked> Sandbox (free, 1 minute, “Wayne” avatar)</label>
-      <select id="avatar" disabled aria-label="Avatar"><option>Loading avatars…</option></select>
+      <label><input type="checkbox" id="sandbox"> Sandbox (free, 1 minute, “Wayne” avatar)</label>
+      <select id="avatar" aria-label="Avatar"><option>Loading avatars…</option></select>
       <button class="primary" type="button" id="start">Start</button>
       <button type="button" id="stop" disabled>End</button>
     </div>
@@ -120,6 +120,10 @@
       sel.replaceChildren();
       (Array.isArray(list) ? list : []).forEach((a) => sel.add(new Option(a.name || a.id, a.id)));
       if (!sel.options.length) sel.add(new Option("No avatars returned", ""));
+      // Default avatar: Pedro Sitting
+      const pedro = [...sel.options].find((o) => /pedro/i.test(o.text) && /sitting/i.test(o.text))
+                 || [...sel.options].find((o) => /pedro/i.test(o.text));
+      if (pedro) sel.value = pedro.value; else log("Pedro Sitting not in the avatar list");
       log("Loaded " + sel.options.length + " avatars");
     } catch (e) {
       log("Avatar list failed: " + e.message);
