@@ -111,10 +111,11 @@
 </main>
 
 <script src="config.js"></script>
+<script src="tenant.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js"></script>
 <script>
   const cfg = window.CALLREADY;
-  const sb = supabase.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey);
+  const sb = CallReadyTenant.client();
   const $ = (id) => document.getElementById(id);
   const el = (tag, cls, text) => {
     const n = document.createElement(tag);
@@ -130,7 +131,7 @@
     const i = ORDER.findIndex((s) => key.endsWith("_" + s));
     return i < 0 ? 99 : i;
   };
-  const prettify = (key) => key.replace(/^(vaz|neffy)_/, "").replace(/_/g, " ").replace(/^\w/, (c) => c.toUpperCase());
+  const prettify = (key) => key.replace(/^(vaz|neffy|corv)_/, "").replace(/_/g, " ").replace(/^\w/, (c) => c.toUpperCase());
 
   const when = new Intl.DateTimeFormat("en-AU", {
     timeZone: "Australia/Melbourne", weekday: "short", day: "numeric", month: "short",
@@ -149,6 +150,7 @@
     const { data } = await sb.auth.getSession();
     if (!data.session) { location.replace("./"); return; }
     $("whoEmail").textContent = data.session.user.email;
+    if (CallReadyTenant.isDemo()) showDemoBits();
 
     const { data: profile } = await sb.from("profiles").select("id, role").eq("id", data.session.user.id).maybeSingle();
     if (!profile) {
@@ -363,7 +365,17 @@
   $("refresh").addEventListener("click", load);
   $("doctorFilter").addEventListener("change", renderList);
   $("repFilter").addEventListener("change", renderList);
-  $("signOut").addEventListener("click", async () => { await sb.auth.signOut(); location.replace("./"); });
+  $("signOut").addEventListener("click", () => CallReadyTenant.signOut());
+
+  // Demo logins: back to the demo call screen, plus the Book a demo invitation.
+  function showDemoBits() {
+    document.querySelectorAll('a[href="practice.html"]').forEach((a) => a.setAttribute("href", "demo.html"));
+    $("sub").textContent = "Your practice calls with Dr Tom Nguyen, scored against the Corvina criteria.";
+    const book = el("a", "review card");
+    book.href = cfg.bookDemoUrl;
+    book.append(el("b", "", "Book a demo with Matthew"), el("span", "", "See how CallReady would work with your own products, doctors and scoring."));
+    $("results").after(book);
+  }
   start();
 </script>
 </body>

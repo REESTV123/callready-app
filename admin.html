@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en-AU">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>CallReady demo admin</title>
+<link rel="icon" href="reestv-logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="callready.css">
+<style>
+  main { max-width: 960px; }
+  h1.title { font-weight: 800; font-size: 34px; margin: 0 0 6px; }
+  .sub { color: var(--muted); margin: 0 0 24px; }
+  .panel { padding: 22px; margin-bottom: 24px; }
+  .panel h2 { margin: 0 0 14px; font-size: 20px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; align-items: end; }
+  .grid label { display: grid; gap: 4px; color: var(--muted); font-size: 14px; }
+  input, select { font: inherit; color: var(--text); background: var(--bg-2); border: 1px solid var(--line); border-radius: 8px; padding: 9px 10px; width: 100%; }
+  .row-actions button, .grid button { white-space: nowrap; }
+  .tablewrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { text-align: left; padding: 10px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--faint); font-weight: 500; }
+  td .muted { color: var(--faint); display: block; }
+  .pill { display: inline-block; padding: 2px 8px; border-radius: 99px; font-size: 12px; font-weight: 600; background: var(--panel-2); color: var(--muted); }
+  .pill.active { background: rgba(25,227,210,.18); color: var(--teal); }
+  .pill.expired, .pill.disabled, .pill.used { background: rgba(255,148,102,.15); color: var(--miss); }
+  .row-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+  .row-actions button { padding: 4px 10px; font-size: 13px; }
+  .cap { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; color: var(--muted); }
+  .cap input { width: 110px; }
+</style>
+</head>
+<body>
+<main>
+  <header class="top">
+    <a class="wordmark" href="demo.html">Call<span class="ready">Ready</span></a>
+    <a class="help-btn" href="demo.html">Demo call</a>
+  </header>
+  <div class="who"><span>Signed in as <b id="whoEmail">…</b></span><button type="button" id="signOut">Sign out</button></div>
+
+  <h1 class="title">Demo logins</h1>
+  <p class="sub">Add a prospect by work email. They get an email telling them how to sign in. Their 7 days start when they first sign in.</p>
+  <p class="msg" id="msg" role="status" aria-live="polite"></p>
+
+  <section class="panel card" id="addPanel" hidden>
+    <h2>Add a prospect</h2>
+    <form id="addForm" class="grid" novalidate>
+      <label>Work email<input id="email" type="email" required placeholder="name@company.com"></label>
+      <label>Name (optional)<input id="name" type="text" maxlength="120"></label>
+      <label>Company (optional)<input id="company" type="text" maxlength="120"></label>
+      <label>Calls<input id="calls" type="number" min="1" max="100" value="10"></label>
+      <label>Days<input id="days" type="number" min="1" max="90" value="7"></label>
+      <button class="primary" type="submit" id="addBtn">Add and email</button>
+    </form>
+  </section>
+
+  <section class="panel card" id="listPanel" hidden>
+    <h2>Prospects</h2>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Prospect</th><th>Status</th><th>Calls</th><th>First sign-in</th><th>Ends</th><th></th></tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="panel card" id="capPanel" hidden>
+    <h2>Daily cap across all prospects</h2>
+    <form id="capForm" class="cap" novalidate>
+      <span>Stop new demo calls after</span>
+      <input id="cap" type="number" min="1" max="1000" placeholder="no cap">
+      <span>calls a day.</span>
+      <button type="submit">Save</button>
+    </form>
+  </section>
+
+  <a class="review card" href="results.html"><b>All demo calls</b><span>Every prospect’s calls, scores and standout lines.</span></a>
+</main>
+
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js"></script>
+<script src="tenant.js"></script>
+<script>
+  const cfg = window.CALLREADY;
+  const sb = CallReadyTenant.client();
+  const $ = (id) => document.getElementById(id);
+  const el = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; };
+  const day = new Intl.DateTimeFormat("en-AU", { day: "numeric", month: "short", timeZone: "Australia/Sydney" });
+  let session = null;
+
+  function say(text, isError) {
+    $("msg").textContent = text || "";
+    $("msg").classList.toggle("error", !!isError);
+  }
+
+  async function api(path, body) {
+    const res = await fetch(cfg.apiBase + path, {
+      method: "POST",
+      headers: { Authorization: "Bearer " + session.access_token, "content-type": "application/json" },
+      body: JSON.stringify(body)
+    });
+    const out = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(out.error || ("HTTP " + res.status));
+    return out;
+  }
+
+  async function start() {
+    if (!CallReadyTenant.isDemo()) { location.replace("practice.html"); return; }
+    const { data } = await sb.auth.getSession();
+    if (!data.session) { location.replace("./"); return; }
+    session = data.session;
+    $("whoEmail").textContent = session.user.email;
+
+    const { data: access } = await sb.rpc("demo_access");
+    if (!access || access.role !== "admin") { say("This page is for the CallReady admin only.", true); return; }
+    ["addPanel", "listPanel", "capPanel"].forEach((id) => $(id).hidden = false);
+    await load();
+  }
+
+  async function load() {
+    const { data: users, error } = await sb.rpc("admin_demo_users");
+    if (error) { say("The list didn’t load: " + error.message, true); return; }
+    const tbody = $("rows");
+    tbody.replaceChildren();
+    if (!users.length) {
+      const tr = el("tr"); const td = el("td", "", "No prospects yet."); td.colSpan = 6; tr.append(td); tbody.append(tr);
+    }
+    users.forEach((u) => {
+      const tr = el("tr");
+      const who = el("td");
+      who.append(el("b", "", u.full_name || u.email));
+      if (u.full_name) who.append(el("span", "muted", u.email));
+      if (u.company || u.job_title) who.append(el("span", "muted", [u.job_title, u.company].filter(Boolean).join(", ")));
+      const status = el("td"); status.append(el("span", "pill " + u.status.split(" ")[0], u.status));
+      tr.append(
+        who, status,
+        el("td", "", u.calls_used + " of " + u.calls_allowed),
+        el("td", "", u.first_sign_in ? day.format(new Date(u.first_sign_in)) : "–"),
+        el("td", "", u.expires_at ? day.format(new Date(u.expires_at)) : "–")
+      );
+      const act = el("td"); const box = el("div", "row-actions");
+      const btn = (label, fn) => { const b = el("button", "", label); b.type = "button"; b.addEventListener("click", async () => { b.disabled = true; try { await fn(); } finally { b.disabled = false; } }); box.append(b); };
+      if (!u.first_sign_in && u.status !== "disabled") btn("Resend email", async () => {
+        try { await api("/demo/invite", { email: u.email, resend: true }); say("Invite email sent again to " + u.email + "."); }
+        catch (e) { say(e.message, true); }
+      });
+      if (u.first_sign_in) btn("+7 days", () => rpc("admin_extend_demo_user", { p_email: u.email, p_extra_days: 7, p_extra_calls: 0 }, "Extended " + u.email + " by 7 days."));
+      btn("+5 calls", () => rpc("admin_extend_demo_user", { p_email: u.email, p_extra_days: 0, p_extra_calls: 5 }, "Added 5 calls for " + u.email + "."));
+      btn(u.status === "disabled" ? "Switch on" : "Switch off", () =>
+        rpc("admin_set_demo_user_disabled", { p_email: u.email, p_disabled: u.status !== "disabled" }, (u.status === "disabled" ? "Switched on " : "Switched off ") + u.email + "."));
+      act.append(box); tr.append(act); tbody.append(tr);
+    });
+  }
+
+  async function rpc(name, args, done) {
+    const { error } = await sb.rpc(name, args);
+    if (error) { say(error.message, true); return; }
+    say(done); await load();
+  }
+
+  $("addForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const email = $("email").value.trim().toLowerCase();
+    if (!$("email").checkValidity() || !email) { say("Enter a valid work email.", true); return; }
+    $("addBtn").disabled = true; say("Adding " + email + "…");
+    try {
+      await api("/demo/invite", {
+        email, full_name: $("name").value.trim(), company: $("company").value.trim(),
+        calls_allowed: Number($("calls").value) || 10, access_days: Number($("days").value) || 7
+      });
+      say("Added " + email + " and sent their invite email.");
+      $("addForm").reset(); $("calls").value = 10; $("days").value = 7;
+      await load();
+    } catch (err) {
+      say(err.message, true);
+    } finally {
+      $("addBtn").disabled = false;
+    }
+  });
+
+  $("capForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const v = $("cap").value.trim();
+    await rpc("admin_set_daily_cap", { p_cap: v ? Number(v) : null }, v ? "Daily cap set to " + v + " calls." : "Daily cap removed.");
+  });
+
+  $("signOut").addEventListener("click", () => CallReadyTenant.signOut());
+  start();
+</script>
+</body>
+</html>

@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en-AU">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>CallReady demo: practice call</title>
+<link rel="icon" href="reestv-logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="callready.css">
+<style>
+  .allowance { color: var(--muted); font-size: 15px; margin: -20px 0 24px; }
+  .allowance b { color: var(--text); }
+  .stop { padding: 26px; margin-bottom: 28px; }
+  .stop h2 { margin: 0 0 8px; font-size: 24px; }
+  .stop p { color: var(--muted); margin: 0 0 18px; }
+  .btn { display: inline-block; background: var(--teal); color: #03090B; font-weight: 700; padding: 12px 20px; border-radius: 8px; text-decoration: none; }
+</style>
+</head>
+<body>
+<main>
+  <header class="top">
+    <a class="wordmark" href="demo.html">Call<span class="ready">Ready</span></a>
+    <a class="help-btn" href="/help.html">Help</a>
+  </header>
+  <div class="who"><span>Signed in as <b id="whoEmail">…</b></span><button type="button" id="signOut">Sign out</button></div>
+  <p class="allowance" id="allowance"></p>
+
+  <section class="stop card" id="stop" hidden>
+    <h2 id="stopTitle"></h2>
+    <p id="stopText"></p>
+    <a class="btn" id="stopBook" href="#">Book a demo with Matthew</a>
+  </section>
+
+  <div id="callArea">
+    <h1 class="label">Your next appointment</h1>
+    <section class="slip card" aria-live="polite">
+      <p class="doctor">Dr Tom Nguyen</p>
+      <p class="where">GP, family practice in Footscray, Melbourne</p>
+      <dl>
+        <dt>Time with you</dt><dd>About 5 minutes. The call ends automatically at 6.</dd>
+        <dt>Adoption ladder</dt><dd>3. Trial: has prescribed Corvina privately for two patients in the past two months</dd>
+        <dt>Your objective</dt><dd>Follow up how his Corvina patients are going and handle anything that comes up. Aim for a clear next step with the right adult patients.</dd>
+        <dt>Product</dt><dd>Corvina, a once-nightly tablet for chronic insomnia in adults. Halcyra Pharmaceuticals. Both are fictional.</dd>
+      </dl>
+      <p class="callstate" id="callState" role="status">Getting your call ready…</p>
+    </section>
+
+    <details>
+      <summary>Corvina product card</summary>
+      <p>Use only these facts in the call. Anything else, offer to follow up through Halcyra Medical Information.</p>
+      <ul>
+        <li>Once-nightly tablet for chronic insomnia in adults whose insomnia persists despite sleep hygiene and CBT-I.</li>
+        <li>Not on the PBS: private prescription only.</li>
+        <li>Not for shift-work sleep problems, jet lag or children.</li>
+        <li>Every medicine has side effects. Never say it has none.</li>
+        <li>If you hear about a possible side effect, take it seriously and report it to Halcyra, following company process.</li>
+      </ul>
+    </details>
+  </div>
+
+  <a class="review card" href="results.html"><b>My scorecards</b><span>Your practice calls and scores. A call appears a few minutes after it ends, and is also emailed to you.</span></a>
+  <a class="review card" id="bookCard" href="#"><b>Book a demo with Matthew</b><span>See how CallReady would work with your own products, doctors and scoring.</span></a>
+  <a class="review card" id="adminCard" href="admin.html" hidden><b>Demo admin</b><span>Add prospects, check their calls, extend or switch off logins.</span></a>
+
+  <footer class="foot">
+    <p>CallReady demo. Doctors and medicines are fictional. Calls are processed by ElevenLabs. Transcripts and scores are deleted when your demo login ends.</p>
+    <p>CallReady is built by REESTV · <a href="https://www.callready.com.au">www.callready.com.au</a></p>
+  </footer>
+</main>
+
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js"></script>
+<script src="tenant.js"></script>
+<script>
+  const AGENT = "agent_6801m72cd5hde86bh6mb9zg8qrkp"; // CallReady Demo – Dr Tom Nguyen – Corvina
+  const LEVEL = "Trial";
+  const LINK_LIFE_MS = 12 * 60 * 1000; // ElevenLabs signed links must be used within 15 minutes
+
+  const cfg = window.CALLREADY;
+  const sb = CallReadyTenant.client();
+  const $ = (id) => document.getElementById(id);
+  let inCall = false;
+
+  $("bookCard").href = cfg.bookDemoUrl;
+  $("stopBook").href = cfg.bookDemoUrl;
+
+  const STOPS = {
+    expired: ["Your demo login has ended", "Thanks for trying CallReady. Book a time with Matthew to see how it would work for your team, or to ask for a few more days."],
+    no_calls_left: ["You’ve used all your practice calls", "Thanks for trying CallReady. Your scorecards are still below. Book a time with Matthew to see how it would work for your team."],
+    daily_cap_reached: ["Demo calls are busy today", "We’ve reached today’s limit for demo calls. Come back tomorrow, or book a time with Matthew."],
+    disabled: ["This demo login is switched off", "Email callready@reestv.com if you think this is a mistake, or book a time with Matthew."]
+  };
+
+  function callState(html, isError) {
+    $("callState").innerHTML = html;
+    $("callState").classList.toggle("error", !!isError);
+  }
+
+  function stop(status) {
+    const [title, text] = STOPS[status] || ["The demo isn’t available right now", "Email callready@reestv.com and we’ll sort it out."];
+    $("stopTitle").textContent = title;
+    $("stopText").textContent = text;
+    $("stop").hidden = false;
+    $("callArea").hidden = true;
+    $("bookCard").hidden = true;
+  }
+
+  function showAllowance(a) {
+    if (a.role === "admin") { $("allowance").textContent = "Admin login: no call limit."; return; }
+    const left = Math.max(0, a.calls_allowed - a.calls_used);
+    const until = a.expires_at
+      ? new Intl.DateTimeFormat("en-AU", { weekday: "short", day: "numeric", month: "short", timeZone: "Australia/Sydney" }).format(new Date(a.expires_at))
+      : "";
+    $("allowance").innerHTML = "";
+    $("allowance").append(
+      document.createTextNode("Practice calls left: "), Object.assign(document.createElement("b"), { textContent: left + " of " + a.calls_allowed }),
+      document.createTextNode(until ? " · Demo login ends " + until : "")
+    );
+  }
+
+  async function getCallLink(session) {
+    const res = await fetch(cfg.apiBase + "/signed-url?agent_id=" + encodeURIComponent(AGENT), {
+      headers: { Authorization: "Bearer " + session.access_token }
+    });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) throw Object.assign(new Error(body.error || ("HTTP " + res.status)), { status: res.status, access: body.status });
+    return body; // { signed_url, user_id, rep_email }
+  }
+
+  async function start() {
+    if (!CallReadyTenant.isDemo()) { location.replace("practice.html"); return; }
+    const { data } = await sb.auth.getSession();
+    if (!data.session) { location.replace("./"); return; }
+    $("whoEmail").textContent = data.session.user.email;
+
+    const { data: access, error } = await sb.rpc("demo_access");
+    if (error || !access) { stop("unknown"); console.error(error); return; }
+    if (access.status === "needs_profile") { location.replace("welcome.html"); return; }
+    if (access.role === "admin") $("adminCard").hidden = false;
+    showAllowance(access);
+    if (access.status !== "active") { stop(access.status); return; }
+
+    let call;
+    try {
+      call = await getCallLink(data.session);
+    } catch (e) {
+      if (e.status === 401) { await CallReadyTenant.signOut(); return; }
+      if (e.status === 403 && e.access) { stop(e.access); return; }
+      callState("The call couldn’t be set up. Reload the page to try again.", true);
+      console.error(e);
+      return;
+    }
+
+    const widget = document.createElement("elevenlabs-convai");
+    widget.setAttribute("signed-url", call.signed_url);
+    widget.setAttribute("dynamic-variables", JSON.stringify({
+      adoption_level: LEVEL,
+      rep_email: call.rep_email,
+      user_id: call.user_id
+    }));
+    widget.addEventListener("elevenlabs-convai:call", () => { inCall = true; });
+    document.body.appendChild(widget);
+    callState("When you’re ready, tap the <b>call button</b> in the bottom corner and allow your microphone. Your scorecard appears under <b>My scorecards</b> a few minutes after the call.");
+
+    // A signed link expires if unused, so fetch a fresh one while the rep reads the brief.
+    setInterval(async () => {
+      if (inCall) return;
+      try {
+        const s = (await sb.auth.getSession()).data.session;
+        if (s) widget.setAttribute("signed-url", (await getCallLink(s)).signed_url);
+      } catch (e) { console.warn("Couldn’t refresh call link", e); }
+    }, LINK_LIFE_MS);
+  }
+
+  $("signOut").addEventListener("click", () => CallReadyTenant.signOut());
+  start();
+</script>
+<script src="https://unpkg.com/@elevenlabs/convai-widget-embed" async type="text/javascript"></script>
+</body>
+</html>

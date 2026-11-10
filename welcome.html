@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en-AU">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>CallReady: welcome</title>
+<link rel="icon" href="reestv-logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="callready.css">
+<style>
+  .consent { display: grid; grid-template-columns: auto 1fr; gap: 10px; align-items: start; color: var(--muted); font-size: 15px; }
+  .consent input { width: 20px; height: 20px; margin-top: 3px; accent-color: var(--teal); }
+</style>
+</head>
+<body>
+<main>
+  <header class="top">
+    <a class="wordmark" href="./">Call<span class="ready">Ready</span></a>
+    <a class="help-btn" href="mailto:callready@reestv.com?subject=CallReady%20demo%20help">Help</a>
+  </header>
+  <div class="who"><span>Signed in as <b id="whoEmail">…</b></span><button type="button" id="signOut">Sign out</button></div>
+
+  <section class="signin card">
+    <h1>Welcome to CallReady</h1>
+    <form id="profileForm" novalidate>
+      <p class="lead">Before your practice call, tell us a little about yourself.</p>
+      <label for="fullName">Your name</label>
+      <input id="fullName" type="text" autocomplete="name" required maxlength="120">
+      <label for="company">Company</label>
+      <input id="company" type="text" autocomplete="organization" required maxlength="120">
+      <label for="jobTitle">Role <span style="color:var(--faint)">(optional)</span></label>
+      <input id="jobTitle" type="text" autocomplete="organization-title" maxlength="120" placeholder="e.g. Sales training manager">
+      <label class="consent">
+        <input id="consent" type="checkbox" required>
+        <span>I agree to the <a id="privacyLink" href="https://www.callready.com.au/privacy" target="_blank" rel="noopener">privacy policy</a>, including that my practice calls are processed by ElevenLabs and scored, and that Matthew Rees from CallReady may follow up with me about CallReady.</span>
+      </label>
+      <button class="primary" type="submit" id="saveBtn">Continue to my call</button>
+      <p class="msg" id="msg" role="status" aria-live="polite"></p>
+    </form>
+  </section>
+
+  <footer class="foot">
+    <p>CallReady demo. Doctors and medicines are fictional. Transcripts and scores are deleted when your demo login ends.</p>
+    <p>CallReady is built by REESTV · <a href="https://www.callready.com.au">www.callready.com.au</a></p>
+  </footer>
+</main>
+
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js"></script>
+<script src="tenant.js"></script>
+<script>
+  const cfg = window.CALLREADY;
+  const sb = CallReadyTenant.client();
+  const $ = (id) => document.getElementById(id);
+  let session = null;
+
+  function say(text, isError) {
+    $("msg").textContent = text || "";
+    $("msg").classList.toggle("error", !!isError);
+  }
+
+  async function start() {
+    if (!CallReadyTenant.isDemo()) { location.replace("practice.html"); return; }
+    const { data } = await sb.auth.getSession();
+    if (!data.session) { location.replace("./"); return; }
+    session = data.session;
+    $("whoEmail").textContent = session.user.email;
+
+    const { data: access } = await sb.rpc("demo_access");
+    if (access && access.status !== "needs_profile") { location.replace("demo.html"); return; }
+
+    const { data: me } = await sb.from("profiles").select("full_name, company, job_title").eq("id", session.user.id).maybeSingle();
+    if (me) {
+      $("fullName").value = me.full_name || "";
+      $("company").value = me.company || "";
+      $("jobTitle").value = me.job_title || "";
+    }
+    $((me && me.full_name) ? "company" : "fullName").focus();
+  }
+
+  $("profileForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const name = $("fullName").value.trim(), company = $("company").value.trim();
+    if (!name || !company) { say("Add your name and company.", true); return; }
+    if (!$("consent").checked) { say("Tick the box to agree before you continue.", true); return; }
+
+    $("saveBtn").disabled = true; say("Saving…");
+    const { error } = await sb.rpc("complete_demo_profile", {
+      p_full_name: name, p_company: company, p_job_title: $("jobTitle").value.trim(), p_consent: true
+    });
+    if (error) {
+      $("saveBtn").disabled = false;
+      say("That didn’t save. Try again, or email callready@reestv.com.", true);
+      console.error(error);
+      return;
+    }
+    // Let Matthew know (best effort; the demo works either way).
+    fetch(cfg.apiBase + "/demo/welcome", { method: "POST", headers: { Authorization: "Bearer " + session.access_token } })
+      .catch(() => {})
+      .finally(() => location.replace("demo.html"));
+  });
+
+  $("signOut").addEventListener("click", () => CallReadyTenant.signOut());
+  start();
+</script>
+</body>
+</html>

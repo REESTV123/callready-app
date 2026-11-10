@@ -155,8 +155,12 @@
 </template>
 
 <script src="config.js"></script>
+<script src="tenant.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js"></script>
 <script>
+  // Demo logins have their own call screen.
+  if (CallReadyTenant.isDemo()) { location.replace("demo.html"); throw new Error("demo login"); }
+
   const PRODUCTS = {
     vazkepa: (() => {
       const DOCTORS = {
@@ -279,7 +283,7 @@
   };
 
   const cfg = window.CALLREADY;
-  const sb = supabase.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey);
+  const sb = CallReadyTenant.client();
   const $ = (id) => document.getElementById(id);
   const qs = new URLSearchParams(location.search);
   const LINK_LIFE_MS = 12 * 60 * 1000; // ElevenLabs signed links must be used within 15 minutes
@@ -359,7 +363,7 @@
     try {
       call = await getCallLink(data.session);
     } catch (e) {
-      if (e.status === 401) { await sb.auth.signOut(); location.replace("./"); return; }
+      if (e.status === 401) { await CallReadyTenant.signOut(); return; }
       callState(e.status === 403
         ? "Your account can’t start this call. Ask your trainer to check your invite."
         : "The call couldn’t be set up. Reload the page to try again.", true);
@@ -389,7 +393,7 @@
     }, LINK_LIFE_MS);
   }
 
-  $("signOut").addEventListener("click", async () => { await sb.auth.signOut(); location.replace("./"); });
+  $("signOut").addEventListener("click", () => CallReadyTenant.signOut());
   start();
 </script>
 <script src="https://unpkg.com/@elevenlabs/convai-widget-embed" async type="text/javascript"></script>

@@ -24,7 +24,7 @@
     <form id="emailForm" novalidate>
       <p class="lead">Enter your work email and we’ll send you a sign-in code.</p>
       <label for="email">Work email</label>
-      <input id="email" type="email" autocomplete="email" inputmode="email" required placeholder="you@seqirus.com">
+      <input id="email" type="email" autocomplete="email" inputmode="email" required placeholder="you@company.com">
       <button class="primary" type="submit" id="sendBtn">Send my code</button>
       <p class="msg" id="emailMsg" role="status" aria-live="polite"></p>
     </form>
@@ -46,15 +46,16 @@
 </main>
 
 <script src="config.js"></script>
+<script src="tenant.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js"></script>
 <script>
   const cfg = window.CALLREADY;
-  const sb = supabase.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey);
+  let sb = CallReadyTenant.client();
   const $ = (id) => document.getElementById(id);
   let email = "";
 
   // Already signed in: go straight to practice.
-  sb.auth.getSession().then(({ data }) => { if (data.session) location.replace("practice.html"); });
+  sb.auth.getSession().then(({ data }) => { if (data.session) location.replace(CallReadyTenant.home()); });
 
   function say(el, text, isError) {
     el.textContent = text || "";
@@ -66,6 +67,9 @@
     email = $("email").value.trim().toLowerCase();
     if (!$("email").checkValidity() || !email) { say($("emailMsg"), "Enter a valid email address.", true); return; }
     $("sendBtn").disabled = true; say($("emailMsg"), "Sending…");
+    // Find which client database this email belongs to, then sign in against that one.
+    CallReadyTenant.set(await CallReadyTenant.lookup(email));
+    sb = CallReadyTenant.client();
     const { error } = await sb.auth.signInWithOtp({ email, options: { shouldCreateUser: true } });
     $("sendBtn").disabled = false;
     if (error) {
@@ -92,7 +96,7 @@
     const { error } = await sb.auth.verifyOtp({ email, token, type: "email" });
     $("verifyBtn").disabled = false;
     if (error) { say($("codeMsg"), "That code didn’t work. Check it, or go back and send a new one.", true); return; }
-    location.replace("practice.html");
+    location.replace(CallReadyTenant.home());
   });
 
   $("backBtn").addEventListener("click", () => {
