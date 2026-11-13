@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;800;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="callready.css">
+<link rel="stylesheet" href="callready.css?v=2">
 <style>
   main { max-width: 960px; }
   h1.title { font-weight: 800; font-size: 34px; margin: 0 0 6px; }
@@ -28,6 +28,7 @@
   .pill { display: inline-block; padding: 2px 8px; border-radius: 99px; font-size: 12px; font-weight: 600; background: var(--panel-2); color: var(--muted); }
   .pill.active { background: rgba(25,227,210,.18); color: var(--teal); }
   .pill.expired, .pill.disabled, .pill.used { background: rgba(255,148,102,.15); color: var(--miss); }
+  .pill.video { background: rgba(229,72,77,.18); color: #FF8A8E; }
   .row-actions { display: flex; flex-wrap: wrap; gap: 6px; }
   .row-actions button { padding: 4px 10px; font-size: 13px; }
   .cap { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; color: var(--muted); }
@@ -43,7 +44,7 @@
   <div class="who"><span>Signed in as <b id="whoEmail">…</b></span><button type="button" id="signOut">Sign out</button></div>
 
   <h1 class="title">Demo logins</h1>
-  <p class="sub">Add a prospect by work email. They get an email telling them how to sign in. Their 7 days start when they first sign in.</p>
+  <p class="sub">Add a prospect by work email. They get an email telling them how to sign in. Their 7 days start when they first sign in. Switch <b>Video</b> on for a prospect to give them the Dr Nguyen video consultation; each video call uses one of their calls.</p>
   <p class="msg" id="msg" role="status" aria-live="polite"></p>
 
   <section class="panel card" id="addPanel" hidden>
@@ -62,7 +63,7 @@
     <h2>Prospects</h2>
     <div class="tablewrap">
       <table>
-        <thead><tr><th>Prospect</th><th>Status</th><th>Calls</th><th>First sign-in</th><th>Ends</th><th></th></tr></thead>
+        <thead><tr><th>Prospect</th><th>Status</th><th>Calls</th><th>Video</th><th>First sign-in</th><th>Ends</th><th></th></tr></thead>
         <tbody id="rows"></tbody>
       </table>
     </div>
@@ -127,7 +128,7 @@
     const tbody = $("rows");
     tbody.replaceChildren();
     if (!users.length) {
-      const tr = el("tr"); const td = el("td", "", "No prospects yet."); td.colSpan = 6; tr.append(td); tbody.append(tr);
+      const tr = el("tr"); const td = el("td", "", "No prospects yet."); td.colSpan = 7; tr.append(td); tbody.append(tr);
     }
     users.forEach((u) => {
       const tr = el("tr");
@@ -139,6 +140,7 @@
       tr.append(
         who, status,
         el("td", "", u.calls_used + " of " + u.calls_allowed),
+        (() => { const td = el("td"); td.append(el("span", "pill" + (u.video_trial ? " video" : ""), u.video_trial ? "On" : "Off")); return td; })(),
         el("td", "", u.first_sign_in ? day.format(new Date(u.first_sign_in)) : "–"),
         el("td", "", u.expires_at ? day.format(new Date(u.expires_at)) : "–")
       );
@@ -150,6 +152,8 @@
       });
       if (u.first_sign_in) btn("+7 days", () => rpc("admin_extend_demo_user", { p_email: u.email, p_extra_days: 7, p_extra_calls: 0 }, "Extended " + u.email + " by 7 days."));
       btn("+5 calls", () => rpc("admin_extend_demo_user", { p_email: u.email, p_extra_days: 0, p_extra_calls: 5 }, "Added 5 calls for " + u.email + "."));
+      btn(u.video_trial ? "Video off" : "Video on", () =>
+        rpc("admin_set_demo_user_video", { p_email: u.email, p_on: !u.video_trial }, (u.video_trial ? "Video switched off for " : "Video switched on for ") + u.email + "."));
       btn(u.status === "disabled" ? "Switch on" : "Switch off", () =>
         rpc("admin_set_demo_user_disabled", { p_email: u.email, p_disabled: u.status !== "disabled" }, (u.status === "disabled" ? "Switched on " : "Switched off ") + u.email + "."));
       act.append(box); tr.append(act); tbody.append(tr);

@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;800;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="callready.css">
+<link rel="stylesheet" href="callready.css?v=2">
 <style>
   .allowance { color: var(--muted); font-size: 15px; margin: -20px 0 24px; }
   .allowance b { color: var(--text); }
@@ -25,7 +25,7 @@
     <a class="wordmark" href="demo.html">Call<span class="ready">Ready</span></a>
     <a class="help-btn" href="/help.html">Help</a>
   </header>
-  <div class="who"><span>Signed in as <b id="whoEmail">…</b></span><button type="button" id="signOut">Sign out</button></div>
+  <div class="who"><span>Signed in as <b id="whoEmail">…</b></span><span class="who-actions"><a class="btn-video" id="videoTrial" href="video.html" hidden>Video consultation <span class="tag">Trial</span></a><button type="button" id="signOut">Sign out</button></span></div>
   <p class="allowance" id="allowance"></p>
 
   <section class="stop card" id="stop" hidden>
@@ -142,6 +142,7 @@
     if (access.role === "admin") $("adminCard").hidden = false;
     showAllowance(access);
     if (access.status !== "active") { stop(access.status); return; }
+    if (access.video) $("videoTrial").hidden = false; // switched on per prospect in Demo admin
 
     let call;
     try {

@@ -51,8 +51,8 @@
     </div>
 
     <div class="controls">
-      <label><input type="checkbox" id="sandbox" checked> Sandbox (free, 1 minute, “Wayne” avatar)</label>
-      <select id="avatar" disabled aria-label="Avatar"><option>Loading avatars…</option></select>
+      <label><input type="checkbox" id="sandbox"> Sandbox (free, 1 minute, “Wayne” avatar)</label>
+      <select id="avatar" aria-label="Avatar"><option>Loading avatars…</option></select>
       <button class="primary" type="button" id="start">Start</button>
       <button type="button" id="stop" disabled>End</button>
     </div>
@@ -63,7 +63,7 @@
         <dt>Adoption ladder</dt><dd>3. Trial: has prescribed Corvina privately for two patients</dd>
         <dt>Your objective</dt><dd>Follow up how his patients are going and handle anything that comes up. Aim for a clear next step.</dd>
         <dt>Product</dt><dd>Corvina, once-nightly tablet for chronic insomnia in adults (fictional)</dd>
-        <dt>Time</dt><dd id="timeNote">Up to 2 minutes per session</dd>
+        <dt>Time</dt><dd id="timeNote">Up to 6 minutes per session</dd>
       </dl>
     </section>
 
@@ -120,10 +120,13 @@
       sel.replaceChildren();
       (Array.isArray(list) ? list : []).forEach((a) => sel.add(new Option(a.name || a.id, a.id)));
       if (!sel.options.length) sel.add(new Option("No avatars returned", ""));
-      // Default avatar: Pedro Sitting
-      const pedro = [...sel.options].find((o) => /pedro/i.test(o.text) && /sitting/i.test(o.text))
-                 || [...sel.options].find((o) => /pedro/i.test(o.text));
-      if (pedro) sel.value = pedro.value; else log("Pedro Sitting not in the avatar list");
+      // Default avatar: Dr Nguyen's (DEMO_AVATAR_ID on the Worker), else Pedro Sitting
+      const NGUYEN = "f27584a5-14df-4d01-83e9-8cedc148a6a4";
+      const pick = [...sel.options].find((o) => o.value === NGUYEN)
+                || [...sel.options].find((o) => /pedro/i.test(o.text) && /sitting/i.test(o.text))
+                || [...sel.options].find((o) => /pedro/i.test(o.text));
+      if (pick) sel.value = pick.value; else log("Neither Dr Nguyen's avatar nor Pedro is in the public list");
+      if (pick && pick.value !== NGUYEN) log("Dr Nguyen's avatar isn't in the public list; video.html still uses it");
       log("Loaded " + sel.options.length + " avatars");
     } catch (e) {
       log("Avatar list failed: " + e.message);

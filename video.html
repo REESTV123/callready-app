@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
-<title>CallReady neffy: Dr Karen Doyle on video</title>
+<title>CallReady: video consultation</title>
 <link rel="icon" href="reestv-logo.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -16,6 +16,7 @@
   .stage .idle { color: var(--faint); text-align: center; padding: 20px; max-width: 34em; }
   .timer { position: absolute; top: 12px; right: 14px; background: rgba(3,9,11,.7); color: var(--teal); font-weight: 700; padding: 4px 10px; border-radius: 99px; font-size: 14px; }
   .controls { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin: 0 0 22px; }
+  .controls .note { color: var(--muted); font-size: 14px; }
   button[disabled] { opacity: .5; cursor: default; }
   .trial-tag { display: inline-block; font-size: 13px; font-weight: 700; color: var(--teal); border: 1px solid var(--teal); border-radius: 99px; padding: 2px 10px; margin-left: 8px; vertical-align: middle; }
 </style>
@@ -23,43 +24,44 @@
 <body>
 <main>
   <header class="top">
-    <a class="wordmark" href="practice.html">Call<span class="ready">Ready</span></a>
+    <a class="wordmark" id="home" href="./">Call<span class="ready">Ready</span></a>
     <a class="help-btn" href="/help.html">Help</a>
   </header>
-  <div class="who"><span>Signed in as <b id="whoEmail">…</b></span><span class="who-actions"><a class="btn-back" href="practice.html?p=neffy">← Back to practice</a><button type="button" id="signOut">Sign out</button></span></div>
+  <div class="who"><span>Signed in as <b id="whoEmail">…</b></span><span class="who-actions"><a class="btn-back" id="back" href="./">← Back to practice</a><button type="button" id="signOut">Sign out</button></span></div>
 
   <h1 class="label">Your next appointment, on video <span class="trial-tag">Trial</span></h1>
   <p class="callstate" id="msg" role="status" aria-live="polite">Checking your account…</p>
 
   <div id="app" hidden>
     <div class="stage" id="stage">
-      <div class="idle" id="idle">Read the brief below, then press <b>Start video call</b>, allow your microphone, and begin your detail when Dr Doyle greets you.</div>
+      <div class="idle" id="idle"></div>
       <span class="timer" id="timer" hidden></span>
     </div>
     <div class="controls">
       <button class="primary" type="button" id="start">Start video call</button>
       <button type="button" id="stop" disabled>End call</button>
+      <span class="note" id="usesNote" hidden>Each video call uses one of your practice calls.</span>
     </div>
 
     <section class="slip card">
-      <p class="doctor">Dr Karen Doyle</p>
-      <p class="where">GP, bulk-billing practice in Sunbury</p>
+      <p class="doctor" id="doctor"></p>
+      <p class="where" id="where"></p>
       <dl>
-        <dt>Time with you</dt><dd>About 5 minutes. The video ends at <span id="capNote">5½ minutes</span>.</dd>
-        <dt>Adoption ladder</dt><dd>2. Trial User: has switched one or two patients to neffy at renewal</dd>
-        <dt>Your objective</dt><dd>Follow up their experience, check patient selection and handle any issues. Aim for offering it to more suitable patients.</dd>
-        <dt>Product</dt><dd>neffy (adrenaline) nasal spray 1 mg and 2 mg, CSL Seqirus</dd>
+        <dt>Time with you</dt><dd id="time"></dd>
+        <dt>Adoption ladder</dt><dd id="level"></dd>
+        <dt>Your objective</dt><dd id="objective"></dd>
+        <dt>Product</dt><dd id="product"></dd>
       </dl>
     </section>
 
     <div id="reference"></div>
 
-    <a class="review card" href="results.html"><b>My results</b><span>Your video call is scored like any other practice call. It appears a few minutes after it ends, and is also emailed to you.</span></a>
-    <a class="review card" href="practice.html?p=neffy&amp;d=doyle&amp;l=2"><b>Prefer a voice call?</b><span>Practise the same visit with Dr Doyle without video.</span></a>
+    <a class="review card" href="results.html"><b id="resultsTitle">My results</b><span>Your video call is scored like any other practice call. It appears a few minutes after it ends, and is also emailed to you.</span></a>
+    <a class="review card" id="voice" href="./"><b>Prefer a voice call?</b><span id="voiceText"></span></a>
   </div>
 
   <footer class="foot">
-    <p>For internal sales training only. Doctors are fictional. Product facts are summarised from CSL Seqirus approved materials (AU-NEF-26-0138, AU-NEF-26-0060); review the full Product Information before prescribing. Video calls are processed by HeyGen LiveAvatar and ElevenLabs for training only.</p>
+    <p id="footNote"></p>
     <p>CallReady is built by REESTV · <a href="https://www.callready.com.au">www.callready.com.au</a></p>
   </footer>
 </main>
@@ -69,8 +71,48 @@
 <script src="https://cdn.jsdelivr.net/npm/livekit-client@2.5.7/dist/livekit-client.umd.js"></script>
 <script src="tenant.js"></script>
 <script>
-  // Demo logins use the admin avatar page.
-  if (CallReadyTenant.isDemo()) { location.replace("avatar.html"); throw new Error("demo login"); }
+  // One video page for every client. The Worker decides which doctor, agent and avatar each login gets;
+  // this only sets the brief that goes with it.
+  const PERSONAS = {
+    seqirus: {
+      title: "CallReady neffy: Dr Karen Doyle on video",
+      home: "practice.html", back: "practice.html?p=neffy",
+      doctor: "Dr Karen Doyle", short: "Dr Doyle",
+      where: "GP, bulk-billing practice in Sunbury",
+      time: "About 5 minutes. The video ends at 5½ minutes.",
+      level: "2. Trial User: has switched one or two patients to neffy at renewal",
+      objective: "Follow up their experience, check patient selection and handle any issues. Aim for offering it to more suitable patients.",
+      product: "neffy (adrenaline) nasal spray 1 mg and 2 mg, CSL Seqirus",
+      reference: { page: "practice.html", template: "#ref-neffy" },
+      results: "My results",
+      voice: { href: "practice.html?p=neffy&d=doyle&l=2", text: "Practise the same visit with Dr Doyle without video." },
+      foot: "For internal sales training only. Doctors are fictional. Product facts are summarised from CSL Seqirus approved materials (AU-NEF-26-0138, AU-NEF-26-0060); review the full Product Information before prescribing. Video calls are processed by HeyGen LiveAvatar and ElevenLabs for training only.",
+      off: "The video trial isn’t switched on for your account. Ask your trainer if you’d like to take part."
+    },
+    demo: {
+      title: "CallReady demo: Dr Tom Nguyen on video",
+      home: "demo.html", back: "demo.html",
+      doctor: "Dr Tom Nguyen", short: "Dr Nguyen",
+      where: "GP, family practice in Footscray, Melbourne",
+      time: "About 5 minutes. The video ends at 6 minutes.",
+      level: "3. Trial: has prescribed Corvina privately for two patients in the past two months",
+      objective: "Follow up how his Corvina patients are going and handle anything that comes up. Aim for a clear next step with the right adult patients.",
+      product: "Corvina, a once-nightly tablet for chronic insomnia in adults. Halcyra Pharmaceuticals. Both are fictional.",
+      reference: { page: "demo.html", details: "#callArea details" },
+      results: "My scorecards",
+      voice: { href: "demo.html", text: "Practise the same visit with Dr Nguyen without video." },
+      foot: "CallReady demo. Doctors and medicines are fictional. Video calls are processed by HeyGen LiveAvatar and ElevenLabs. Transcripts and scores are deleted when your demo login ends.",
+      off: "Video isn’t switched on for your demo login. Book a time with Matthew if you’d like to try it.",
+      usesCall: true
+    }
+  };
+  const DEMO_STOPS = {
+    expired: "Your demo login has ended. Book a time with Matthew to see more.",
+    no_calls_left: "You’ve used all your practice calls. Book a time with Matthew to see more.",
+    daily_cap_reached: "Demo calls are busy today. Come back tomorrow, or book a time with Matthew.",
+    disabled: "This demo login is switched off.",
+    needs_profile: "Finish your profile first."
+  };
 
   const { Room, RoomEvent, Track } = LivekitClient;
   const cfg = window.CALLREADY;
@@ -79,6 +121,7 @@
   const debug = new URLSearchParams(location.search).has("debug");
   const log = (...m) => { if (debug) console.log("[video]", ...m); };
   let session = null, room = null, current = null, tick = null, linked = false;
+  let P = PERSONAS[CallReadyTenant.isDemo() ? "demo" : "seqirus"];
 
   function say(text, isError) {
     $("msg").textContent = text || "";
@@ -86,36 +129,65 @@
     $("msg").classList.toggle("error", !!isError);
   }
 
-  async function api(path, body, keepalive) {
+  async function api(path, body, method) {
     const s = (await sb.auth.getSession()).data.session || session;
     const res = await fetch(cfg.apiBase + path, {
-      method: "POST", keepalive: !!keepalive,
+      method: method || "POST",
       headers: { Authorization: "Bearer " + s.access_token, "content-type": "application/json" },
-      body: JSON.stringify(body || {})
+      body: method === "GET" ? undefined : JSON.stringify(body || {})
     });
     const out = await res.json().catch(() => ({}));
-    if (!res.ok) throw Object.assign(new Error(out.error || ("HTTP " + res.status)), { status: res.status });
+    if (!res.ok) throw Object.assign(new Error(out.error || ("HTTP " + res.status)), { status: res.status, access: out.status });
     return out;
   }
 
-  // The neffy product card and PBS panel come from the practice page, so there is one copy to keep up to date.
+  function explain(e) {
+    if (e.access && DEMO_STOPS[e.access]) return DEMO_STOPS[e.access];
+    if (e.status === 403 && /switched on/i.test(e.message)) return P.off;
+    if (e.status === 429 || e.status === 403 || e.status === 503) return e.message;
+    return "The video call didn’t start. Check your microphone is allowed, then try again.";
+  }
+
+  function fillBrief() {
+    document.title = P.title;
+    $("home").href = P.home; $("back").href = P.back;
+    $("doctor").textContent = P.doctor; $("where").textContent = P.where;
+    $("time").textContent = P.time; $("level").textContent = P.level;
+    $("objective").textContent = P.objective; $("product").textContent = P.product;
+    $("resultsTitle").textContent = P.results;
+    $("voice").href = P.voice.href; $("voiceText").textContent = P.voice.text;
+    $("footNote").textContent = P.foot;
+    $("usesNote").hidden = !P.usesCall;
+    $("idle").innerHTML = "Read the brief below, then press <b>Start video call</b>, allow your microphone, and begin your detail when " + P.short + " greets you.";
+  }
+
+  // The product card comes from the client's own practice page, so there is one copy to keep up to date.
   async function loadReference() {
     try {
-      const html = await (await fetch("practice.html", { cache: "no-cache" })).text();
-      const tpl = new DOMParser().parseFromString(html, "text/html").getElementById("ref-neffy");
-      if (tpl) $("reference").appendChild(document.importNode(tpl.content, true));
-    } catch (e) { console.warn("Couldn't load the neffy product card", e); }
+      const html = await (await fetch(P.reference.page, { cache: "no-cache" })).text();
+      const doc = new DOMParser().parseFromString(html, "text/html");
+      if (P.reference.template) {
+        const tpl = doc.querySelector(P.reference.template);
+        if (tpl) $("reference").appendChild(document.importNode(tpl.content, true));
+      } else {
+        doc.querySelectorAll(P.reference.details).forEach((d) => $("reference").appendChild(document.importNode(d, true)));
+      }
+    } catch (e) { console.warn("Couldn't load the product card", e); }
   }
 
   async function init() {
+    fillBrief();
     const { data } = await sb.auth.getSession();
     if (!data.session) { location.replace("./"); return; }
     session = data.session;
     $("whoEmail").textContent = session.user.email;
 
-    const { data: me, error } = await sb.from("profiles").select("avatar_trial").eq("id", session.user.id).maybeSingle();
-    if (error || !me || !me.avatar_trial) {
-      say("The video trial isn’t switched on for your account. Ask your trainer if you’d like to take part.", true);
+    try {
+      const access = await api("/avatar/access", null, "GET");
+      if (PERSONAS[access.tenant] && PERSONAS[access.tenant] !== P) { P = PERSONAS[access.tenant]; fillBrief(); }
+    } catch (e) {
+      if (e.status === 401) { await CallReadyTenant.signOut(); return; }
+      say(explain(e), true);
       return;
     }
     say("");
@@ -142,9 +214,9 @@
   }
 
   $("start").addEventListener("click", async () => {
-    $("start").disabled = true; say("Connecting to Dr Doyle…"); linked = false;
+    $("start").disabled = true; say("Connecting to " + P.short + "…"); linked = false;
     try {
-      current = await api("/avatar/session", {});
+      current = await api("/avatar/session", { fixed: true });
       log("Session", current);
 
       room = new Room({ adaptiveStream: true });
@@ -170,8 +242,7 @@
     } catch (e) {
       console.error(e);
       if (e.status === 401) { await CallReadyTenant.signOut(); return; }
-      say(e.status === 429 || e.status === 403 || e.status === 503 ? e.message
-        : "The video call didn’t start. Check your microphone is allowed, then try again.", true);
+      say(explain(e), true);
       finish();
     }
   });
@@ -199,7 +270,7 @@
     room = null;
     if (current && current.session_id) {
       const id = current.session_id; current = null;
-      $("idle").innerHTML = "Call ended. Your score will appear in <a href=\"results.html\">My results</a> in a few minutes.";
+      $("idle").innerHTML = "Call ended. Your score will appear in <a href=\"results.html\">" + P.results + "</a> in a few minutes.";
       try { await api("/avatar/stop", { session_id: id }); } catch (e) { console.warn("Stop request failed (the call still ends at its time cap)", e); }
     }
   }
