@@ -179,3 +179,20 @@ details b { color: var(--text); }
 .callstate { margin: 22px 0 0; font-size: 15px; color: var(--muted); }
 .callstate.error { color: var(--miss); }
 nav.products a { cursor: pointer; }
+
+/* Video consultation trial button (neffy page): red so it stands apart from the teal controls */
+.btn-video {
+  display: block; margin: -16px 0 32px; padding: 14px 20px; border-radius: 18px; text-decoration: none;
+  color: #fff; background: linear-gradient(90deg, #E5484D, #C62A2F);
+  box-shadow: 0 0 24px rgba(229, 72, 77, 0.3);
+}
+.btn-video b { display: block; font-weight: 800; font-size: 19px; line-height: 1.2; }
+.btn-video b::after { content: " →"; }
+.btn-video > span { display: block; font-size: 14px; margin-top: 3px; color: rgba(255, 255, 255, 0.88); }
+.btn-video .tag {
+  display: inline-block; vertical-align: middle; margin-left: 6px; padding: 1px 8px; border-radius: 99px;
+  font-size: 12px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase;
+  background: rgba(255, 255, 255, 0.2);
+}
+.btn-video:hover { background: linear-gradient(90deg, #EF5B60, #D2353A); }
+.btn-video:focus-visible { outline-color: #FF8A8E; }
