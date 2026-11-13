@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en-AU">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>CallReady neffy: Dr Karen Doyle on video</title>
+<link rel="icon" href="reestv-logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="callready.css">
+<style>
+  .stage { aspect-ratio: 16 / 9; background: #000; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; display: grid; place-items: center; position: relative; margin: 0 0 14px; }
+  .stage video { width: 100%; height: 100%; object-fit: cover; }
+  .stage .idle { color: var(--faint); text-align: center; padding: 20px; max-width: 34em; }
+  .timer { position: absolute; top: 12px; right: 14px; background: rgba(3,9,11,.7); color: var(--teal); font-weight: 700; padding: 4px 10px; border-radius: 99px; font-size: 14px; }
+  .controls { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin: 0 0 22px; }
+  button[disabled] { opacity: .5; cursor: default; }
+  .trial-tag { display: inline-block; font-size: 13px; font-weight: 700; color: var(--teal); border: 1px solid var(--teal); border-radius: 99px; padding: 2px 10px; margin-left: 8px; vertical-align: middle; }
+</style>
+</head>
+<body>
+<main>
+  <header class="top">
+    <a class="wordmark" href="practice.html">Call<span class="ready">Ready</span></a>
+    <a class="help-btn" href="/help.html">Help</a>
+  </header>
+  <div class="who"><span>Signed in as <b id="whoEmail">…</b></span><button type="button" id="signOut">Sign out</button></div>
+
+  <h1 class="label">Your next appointment, on video <span class="trial-tag">Trial</span></h1>
+  <p class="callstate" id="msg" role="status" aria-live="polite">Checking your account…</p>
+
+  <div id="app" hidden>
+    <div class="stage" id="stage">
+      <div class="idle" id="idle">Read the brief below, then press <b>Start video call</b>, allow your microphone, and begin your detail when Dr Doyle greets you.</div>
+      <span class="timer" id="timer" hidden></span>
+    </div>
+    <div class="controls">
+      <button class="primary" type="button" id="start">Start video call</button>
+      <button type="button" id="stop" disabled>End call</button>
+    </div>
+
+    <section class="slip card">
+      <p class="doctor">Dr Karen Doyle</p>
+      <p class="where">GP, bulk-billing practice in Sunbury</p>
+      <dl>
+        <dt>Time with you</dt><dd>About 5 minutes. The video ends at <span id="capNote">5½ minutes</span>.</dd>
+        <dt>Adoption ladder</dt><dd>2. Trial User: has switched one or two patients to neffy at renewal</dd>
+        <dt>Your objective</dt><dd>Follow up their experience, check patient selection and handle any issues. Aim for offering it to more suitable patients.</dd>
+        <dt>Product</dt><dd>neffy (adrenaline) nasal spray 1 mg and 2 mg, CSL Seqirus</dd>
+      </dl>
+    </section>
+
+    <div id="reference"></div>
+
+    <a class="review card" href="results.html"><b>My results</b><span>Your video call is scored like any other practice call. It appears a few minutes after it ends, and is also emailed to you.</span></a>
+    <a class="review card" href="practice.html?p=neffy&amp;d=doyle&amp;l=2"><b>Prefer a voice call?</b><span>Practise the same visit with Dr Doyle without video.</span></a>
+  </div>
+
+  <footer class="foot">
+    <p>For internal sales training only. Doctors are fictional. Product facts are summarised from CSL Seqirus approved materials (AU-NEF-26-0138, AU-NEF-26-0060); review the full Product Information before prescribing. Video calls are processed by HeyGen LiveAvatar and ElevenLabs for training only.</p>
+    <p>CallReady is built by REESTV · <a href="https://www.callready.com.au">www.callready.com.au</a></p>
+  </footer>
+</main>
+
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/livekit-client@2.5.7/dist/livekit-client.umd.js"></script>
+<script src="tenant.js"></script>
+<script>
+  // Demo logins use the admin avatar page.
+  if (CallReadyTenant.isDemo()) { location.replace("avatar.html"); throw new Error("demo login"); }
+
+  const { Room, RoomEvent, Track } = LivekitClient;
+  const cfg = window.CALLREADY;
+  const sb = CallReadyTenant.client();
+  const $ = (id) => document.getElementById(id);
+  const debug = new URLSearchParams(location.search).has("debug");
+  const log = (...m) => { if (debug) console.log("[video]", ...m); };
+  let session = null, room = null, current = null, tick = null, linked = false;
+
+  function say(text, isError) {
+    $("msg").textContent = text || "";
+    $("msg").hidden = !text;
+    $("msg").classList.toggle("error", !!isError);
+  }
+
+  async function api(path, body, keepalive) {
+    const s = (await sb.auth.getSession()).data.session || session;
+    const res = await fetch(cfg.apiBase + path, {
+      method: "POST", keepalive: !!keepalive,
+      headers: { Authorization: "Bearer " + s.access_token, "content-type": "application/json" },
+      body: JSON.stringify(body || {})
+    });
+    const out = await res.json().catch(() => ({}));
+    if (!res.ok) throw Object.assign(new Error(out.error || ("HTTP " + res.status)), { status: res.status });
+    return out;
+  }
+
+  // The neffy product card and PBS panel come from the practice page, so there is one copy to keep up to date.
+  async function loadReference() {
+    try {
+      const html = await (await fetch("practice.html", { cache: "no-cache" })).text();
+      const tpl = new DOMParser().parseFromString(html, "text/html").getElementById("ref-neffy");
+      if (tpl) $("reference").appendChild(document.importNode(tpl.content, true));
+    } catch (e) { console.warn("Couldn't load the neffy product card", e); }
+  }
+
+  async function init() {
+    const { data } = await sb.auth.getSession();
+    if (!data.session) { location.replace("./"); return; }
+    session = data.session;
+    $("whoEmail").textContent = session.user.email;
+
+    const { data: me, error } = await sb.from("profiles").select("avatar_trial").eq("id", session.user.id).maybeSingle();
+    if (error || !me || !me.avatar_trial) {
+      say("The video trial isn’t switched on for your account. Ask your trainer if you’d like to take part.", true);
+      return;
+    }
+    say("");
+    $("app").hidden = false;
+    loadReference();
+  }
+
+  // Find the ElevenLabs conversation id in whatever event shape LiveAvatar forwards.
+  function findConversationId(o, depth) {
+    if (!o || typeof o !== "object" || depth > 4) return null;
+    for (const [k, v] of Object.entries(o)) {
+      if (k === "conversation_id" && typeof v === "string" && /^conv_[A-Za-z0-9]+$/.test(v)) return v;
+      const inner = findConversationId(v, (depth || 0) + 1);
+      if (inner) return inner;
+    }
+    return null;
+  }
+
+  async function linkConversation(conversationId) {
+    if (linked || !current) return;
+    linked = true;
+    try { await api("/avatar/link", { session_id: current.session_id, conversation_id: conversationId }); log("Linked", conversationId); }
+    catch (e) { linked = false; console.warn("Couldn't link the call to your account; it will be matched by time instead", e); }
+  }
+
+  $("start").addEventListener("click", async () => {
+    $("start").disabled = true; say("Connecting to Dr Doyle…"); linked = false;
+    try {
+      current = await api("/avatar/session", {});
+      log("Session", current);
+
+      room = new Room({ adaptiveStream: true });
+      room.on(RoomEvent.TrackSubscribed, (track) => {
+        if (track.kind === Track.Kind.Video) { $("idle").hidden = true; $("stage").prepend(track.attach()); }
+        if (track.kind === Track.Kind.Audio) document.body.appendChild(track.attach());
+      });
+      room.on(RoomEvent.DataReceived, (payload, _p, _k, topic) => {
+        try {
+          const e = JSON.parse(new TextDecoder().decode(payload));
+          log(topic, e);
+          const conv = findConversationId(e, 0);
+          if (conv) linkConversation(conv);
+        } catch (err) { /* not JSON */ }
+      });
+      room.on(RoomEvent.Disconnected, () => finish());
+
+      await room.connect(current.livekit_url, current.livekit_client_token);
+      await room.localParticipant.setMicrophoneEnabled(true);
+      say("");
+      $("stop").disabled = false;
+      countdown(current.max_session_duration || 330);
+    } catch (e) {
+      console.error(e);
+      if (e.status === 401) { await CallReadyTenant.signOut(); return; }
+      say(e.status === 429 || e.status === 403 || e.status === 503 ? e.message
+        : "The video call didn’t start. Check your microphone is allowed, then try again.", true);
+      finish();
+    }
+  });
+
+  $("stop").addEventListener("click", () => { if (room) room.disconnect(); else finish(); });
+
+  function countdown(secs) {
+    const end = Date.now() + secs * 1000;
+    $("timer").hidden = false;
+    clearInterval(tick);
+    tick = setInterval(() => {
+      const left = Math.max(0, Math.round((end - Date.now()) / 1000));
+      $("timer").textContent = Math.floor(left / 60) + ":" + String(left % 60).padStart(2, "0");
+      if (!left) clearInterval(tick);
+    }, 500);
+  }
+
+  // Stop billing as soon as the call ends, however it ends.
+  async function finish() {
+    clearInterval(tick);
+    $("timer").hidden = true;
+    $("start").disabled = false; $("stop").disabled = true;
+    document.querySelectorAll("#stage video, body > audio").forEach((n) => n.remove());
+    $("idle").hidden = false;
+    room = null;
+    if (current && current.session_id) {
+      const id = current.session_id; current = null;
+      $("idle").innerHTML = "Call ended. Your score will appear in <a href=\"results.html\">My results</a> in a few minutes.";
+      try { await api("/avatar/stop", { session_id: id }); } catch (e) { console.warn("Stop request failed (the call still ends at its time cap)", e); }
+    }
+  }
+
+  window.addEventListener("pagehide", () => {
+    if (current && current.session_id && session) {
+      fetch(cfg.apiBase + "/avatar/stop", {
+        method: "POST", keepalive: true,
+        headers: { Authorization: "Bearer " + session.access_token, "content-type": "application/json" },
+        body: JSON.stringify({ session_id: current.session_id })
+      });
+    }
+  });
+
+  $("signOut").addEventListener("click", () => CallReadyTenant.signOut());
+  init();
+</script>
+</body>
+</html>

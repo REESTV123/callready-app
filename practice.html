@@ -48,6 +48,8 @@
     <p class="callstate" id="callState" role="status">Getting your call ready…</p>
   </section>
 
+  <a class="review card" id="videoTrial" href="video.html" hidden><b>Try this visit on video (trial)</b><span>Practise with Dr Doyle as a live video avatar. On video she is always a Trial User.</span></a>
+
   <div id="reference"></div>
 
   <a class="review card" href="results.html"><b>My results</b><span>See your practice calls and scores. A call appears a few minutes after it ends, and is also emailed to you.</span></a>
@@ -358,6 +360,13 @@
     const { data } = await sb.auth.getSession();
     if (!data.session) { location.replace("./"); return; }
     $("whoEmail").textContent = data.session.user.email;
+
+    // Video avatar trial: Dr Doyle, neffy, for reps with the trial switched on.
+    if (pKey === "neffy" && dKey === "doyle") {
+      sb.from("profiles").select("avatar_trial").eq("id", data.session.user.id).maybeSingle()
+        .then(({ data: me }) => { if (me && me.avatar_trial) $("videoTrial").hidden = false; })
+        .catch(() => { /* column not there yet: no video option */ });
+    }
 
     let call;
     try {
