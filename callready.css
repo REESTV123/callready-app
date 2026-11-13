@@ -180,19 +180,19 @@ details b { color: var(--text); }
 .callstate.error { color: var(--miss); }
 nav.products a { cursor: pointer; }
 
-/* Video consultation trial button (neffy page): red so it stands apart from the teal controls */
-.btn-video {
-  display: block; margin: -16px 0 32px; padding: 14px 20px; border-radius: 18px; text-decoration: none;
-  color: #fff; background: linear-gradient(90deg, #E5484D, #C62A2F);
-  box-shadow: 0 0 24px rgba(229, 72, 77, 0.3);
+/* Signed-in bar actions: video trial button (red, so it stands apart from the teal controls) and back link, left of Sign out */
+.who { flex-wrap: wrap; }
+.who-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: flex-end; }
+.btn-video, .btn-back {
+  display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 999px;
+  font: 700 14px "Figtree", sans-serif; text-decoration: none; white-space: nowrap;
 }
-.btn-video b { display: block; font-weight: 800; font-size: 19px; line-height: 1.2; }
-.btn-video b::after { content: " →"; }
-.btn-video > span { display: block; font-size: 14px; margin-top: 3px; color: rgba(255, 255, 255, 0.88); }
-.btn-video .tag {
-  display: inline-block; vertical-align: middle; margin-left: 6px; padding: 1px 8px; border-radius: 99px;
-  font-size: 12px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase;
-  background: rgba(255, 255, 255, 0.2);
-}
+.btn-video { color: #fff; background: linear-gradient(90deg, #E5484D, #C62A2F); box-shadow: 0 0 18px rgba(229, 72, 77, 0.35); }
 .btn-video:hover { background: linear-gradient(90deg, #EF5B60, #D2353A); }
 .btn-video:focus-visible { outline-color: #FF8A8E; }
+.btn-video .tag {
+  padding: 0 7px; border-radius: 99px; font-size: 11px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase;
+  background: rgba(255, 255, 255, 0.22);
+}
+.btn-back { color: var(--teal); border: 1.5px solid var(--edge); background: var(--panel); font-weight: 600; }
+.btn-back:hover { background: var(--panel-2); color: var(--text); }
